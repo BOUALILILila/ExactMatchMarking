@@ -177,20 +177,17 @@ class PassageHandle(TFRecordHandle):
 
     
     def _encode(self, query_ids, doc_ids):
-        query_ids_without_sep = query_ids[:-1]
-        query_ids_trunc = tf.concat((query_ids_without_sep[:self.max_query_length-1], query_ids[-1:]),0) # add SEP end
-        doc_ids_without_markers = doc_ids[1:-1] # remove CLS and SEP
-        
-        input_ids = tf.concat((query_ids_trunc, doc_ids_without_markers), 0) # need [SEP] at last and cut at 512
-        input_ids = tf.concat((input_ids[:self.max_seq_length-1],doc_ids[-1:]), 0)
+        input_ids = tf.concat((query_ids, doc_ids), 0)
 
         input_mask = tf.ones_like(input_ids)
 
-        query_segment_id = tf.zeros_like(query_ids_trunc)
-        doc_segment_id = tf.ones_like(doc_ids[1:])
+        query_segment_id = tf.zeros_like(query_ids)
+        doc_segment_id = tf.ones_like(doc_ids)
         segment_ids = tf.concat((query_segment_id, doc_segment_id), 0)
         segment_ids = segment_ids[:self.max_seq_length]
+
         return input_ids, input_mask, segment_ids
+
 
     def write_train_example(self, tf_writer,
                                          query,
@@ -199,7 +196,7 @@ class PassageHandle(TFRecordHandle):
         query_ids = self.tokenizer.encode(
                 query,
                 add_special_tokens = True,
-                max_length = self.max_seq_length,
+                max_length = self.max_query_length,
                 truncation = True,
             )
 
@@ -209,10 +206,11 @@ class PassageHandle(TFRecordHandle):
         for i, (doc_text, label) in enumerate(zip(docs, labels)):
             doc_ids = self.tokenizer.encode(
                     doc_text,
-                    add_special_tokens = True,
-                    max_length = self.max_seq_length,
+                    add_special_tokens = False,
+                    max_length = self.max_seq_length - len(query_ids) -1, 
                     truncation= True,
                 )
+            doc_ids += query_ids[-1:] # The [SEP] token at the end
 
             doc_ids_tf = tf.train.Feature(
                 int64_list=tf.train.Int64List(value=doc_ids))
@@ -253,10 +251,12 @@ class PassageHandle(TFRecordHandle):
             
             doc_ids = self.tokenizer.encode(
                     doc_text,
-                    add_special_tokens = True,
-                    max_length = self.max_seq_length,
+                    add_special_tokens = False,
+                    max_length = self.max_seq_length - len(query_ids) -1, 
                     truncation= True,
-                ) 
+                )
+                
+            doc_ids += query_ids[-1:]
 
             doc_ids_tf = tf.train.Feature(
                 int64_list=tf.train.Int64List(value=doc_ids))
@@ -295,12 +295,7 @@ class DocumentHandle(TFRecordHandle):
 
         self.max_title_length = kwargs['max_title_length'] if 'max_title_length' in kwargs.keys() else 64
         self.chunk_size = kwargs['chunk_size'] if 'chunk_size' in kwargs.keys() else 384
-        self.stride = kwargs['stride'] if 'stride' in kwargs.keys() else 384
-        if self.stride < 1 :
-            raise ValueError('Stride musbt at least 1 token.')
-        elif self.stride > self.chunk_size:
-            raise ValueError('Stride can\'t be > to chunk size.')
-
+        self.chunk_size = self.chunk_size-1 # for the [SEP] token
         
     
     
@@ -354,7 +349,7 @@ class DocumentHandle(TFRecordHandle):
             if len(doc_ids)+len(title_ids)+len(query_ids)+1 > self.max_seq_length:
                 i = 0
                 while len(doc_ids)>0:
-                    passage_ids = doc_ids[:self.chunk_size-1]
+                    passage_ids = doc_ids[:self.chunk_size]
                     pass_id = f'{doc_id}_{i}'
                     i += 1
                     
@@ -399,8 +394,7 @@ class DocumentHandle(TFRecordHandle):
         return i_ids
     
     def _encode(self, query_ids, title_ids, doc_ids):
-        d_len = self.max_seq_length - self.max_query_length - self.max_title_length -1
-        document_ids = tf.concat(( title_ids, doc_ids[:d_len], query_ids[-1:]), axis= 0) # query_ids[-1:] == [SEP]
+        document_ids = tf.concat(( title_ids, doc_ids, query_ids[-1:]), axis= 0) # query_ids[-1:] == [SEP]
         input_ids = tf.concat((query_ids, document_ids), axis= 0)
 
         input_mask = tf.ones_like(input_ids)
@@ -455,7 +449,11 @@ class DocumentSplitterHandle(DocumentHandle):
         **kwargs
     ):
         super(DocumentSplitterHandle,self).__init__(tokenizer, max_seq_length, max_query_length, seed, **kwargs)
-        self.stride = kwargs['stride'] if 'stride' in kwargs.keys() else 192
+        self.stride = kwargs['stride'] if 'stride' in kwargs.keys() else 384
+        if self.stride < 1 :
+            raise ValueError('Stride musbt at least 1 token.')
+        elif self.stride > self.chunk_size:
+            raise ValueError('Stride can\'t be > to chunk size.')
 
     def write_eval_example(self, tf_writer, ids_writer, i_ids,
                                 query,
@@ -502,9 +500,9 @@ class DocumentSplitterHandle(DocumentHandle):
              
             i = 0
             while len(doc_ids)>0:
-                passage_ids = doc_ids[:self.chunk_size-1] # 1 token for the [SEP]
+                passage_ids = doc_ids[:self.chunk_size]
                 #passage_text = self.tokenizer.convert_tokens_to_string(self.tokenizer.convert_ids_to_tokens(passage_ids))
-                
+                print(passage_ids)
                 doc_ids_tf = tf.train.Feature(
                     int64_list=tf.train.Int64List(value=passage_ids))
                 
@@ -571,7 +569,7 @@ class DocumentSplitterHandle(DocumentHandle):
                 ) 
 
             while len(doc_ids)>0:
-                passage_ids = doc_ids[:self.chunk_size-1]
+                passage_ids = doc_ids[:self.chunk_size]
                 
                 doc_ids_tf = tf.train.Feature(
                     int64_list=tf.train.Int64List(value=passage_ids))

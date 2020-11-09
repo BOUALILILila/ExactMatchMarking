@@ -27,7 +27,7 @@ def main():
                             help='The number of documents retrieved per query.')
     
     parser.add_argument('--dataset_path', type=str, required=False)
-    parser.add_argument('--do_udel', type=bool, default=False)
+    parser.add_argument('--do_udel', action='store_true', default=False)
 
     args, other = parser.parse_known_args()
     

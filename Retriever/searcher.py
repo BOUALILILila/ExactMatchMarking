@@ -94,6 +94,8 @@ class Searcher:
                             clean_content = clean_content.replace('\t', ' ')
                             if use_doc_title:
                                 clean_title = clean_html(title, collection=collection)
+                                clean_title = clean_title.replace('\n', ' ')
+                                clean_title = clean_title.replace('\t', ' ')
                                 if clean_title in ('None'):
                                     clean_title = ''
                             else:

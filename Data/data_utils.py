@@ -1,7 +1,6 @@
 import collections
-import tensorflow as tf
 import os , time
-import re
+import re, sys
 from bs4 import BeautifulSoup
 
 
@@ -65,7 +64,11 @@ class TopKPrepFromRetriever(DataPrep):
         collection = {}
         with open(path) as f:
             for i, line in enumerate(f):
-                    doc_id, doc_title, doc_text = line.rstrip().split('\t')
+                    try:
+                        doc_id, doc_title, doc_text = line.rstrip('\n').split('\t')
+                    except:
+                        print(line)
+                        sys.exit()
                     collection[doc_id] = (doc_title, doc_text.replace('\n', ' '))
                     if i % 10000 == 0:
                         print(f'Loading collection, doc {i}')
