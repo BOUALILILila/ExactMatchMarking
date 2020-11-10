@@ -69,10 +69,10 @@ def main():
         cache_dir=model_args.cache_dir,
         output_hidden_states=False,
     )
-    tokenizer = AutoTokenizer.from_pretrained(
-        model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
-        cache_dir=model_args.cache_dir,
-    )
+    # tokenizer = AutoTokenizer.from_pretrained(
+    #     model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
+    #     cache_dir=model_args.cache_dir,
+    # )
 
     with training_args.strategy.scope():
         model = TFAutoModelForSequenceClassification.from_pretrained(
@@ -81,9 +81,6 @@ def main():
             config=config,
             cache_dir=model_args.cache_dir,
         )
-
-    data_args.handle = data_args.handle_class(tokenizer, data_args.max_seq_length)
-    data_args.doc_processor = data_args.processor_class(data_args.handle, data_args.marker)
 
     train_dataset = None
     eval_dataset = None
@@ -96,7 +93,7 @@ def main():
     if training_args.do_train:
         filename = os.path.join(data_args.train_data_dir, f'dataset_train_{data_args.train_set_name}.tf')
         train_dataset, num_train_examples = data_args.doc_processor.get_train_dataset(filename, 
-                                                                        training_args.train_batch_size)
+                                                                        training_args.train_batch_size, training_args.seed)
 
     if training_args.do_eval or training_args.do_early_stopping:
         filename = os.path.join(data_args.eval_data_dir, f'dataset_dev_{data_args.eval_set_name}.tf')

@@ -1,8 +1,8 @@
 import argparse
 import os
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, BertTokenizerFast
 
-from Data import *
+from Data import get_available_collections, get_collection, get_marker
 
 
 def main():
@@ -10,7 +10,7 @@ def main():
     parser = argparse.ArgumentParser(description='SaveDatasetTFRecord')
 
     ## Required parameters
-    parser.add_argument('--collection', type=str, required=True, help=f'{get_collection_names()}')
+    parser.add_argument('--collection', type=str, required=True, help=f'{get_available_collections()}')
     parser.add_argument('--set', type=str, default='test')
     parser.add_argument("--strategy", default=None, type=str, required=True,
                             help="the marking strategy in ('base', 'sim_doc', 'sim_pair', 'pre_doc', 'pre_pair')")
@@ -40,26 +40,22 @@ def main():
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
         
+    col = get_collection(args.collection)
 
-    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name_path)
-
+    tokenizer = BertTokenizerFast.from_pretrained(args.tokenizer_name_path)
     
     marker = get_marker(args.strategy.lower())
 
-    processor_class, handle_class = get_collection_processors(args.collection)
-
-    handle = handle_class(tokenizer, args.max_seq_len, args.max_query_len, args.seed,
+    processor = col.get_processor(args.max_seq_len, args.max_query_len,
                             max_title_length = args.max_title_len, 
                             chunk_size = args.chunk_size, 
                             stride = args.stride)
-                            
-    processor = processor_class(handle, marker)
-    
+
 
     if args.set in ('test', 'dev'):
-        processor.prepare_inference_dataset(args.data_path, args.output_dir, args.set + args.set_name)
+        processor.prepare_inference_dataset(tokenizer, marker, args.data_path, args.output_dir, f'{args.set}_{args.set_name}')
     elif args.set == 'train':
-        processor.prepare_train_dataset(args.data_path, args.output_dir, args.set + args.set_name)
+        processor.prepare_train_dataset(tokenizer, marker, args.data_path, args.output_dir, f'{args.set}_{args.set_name}')
     else :
         raise ValueError("Set must be in ['train', 'dev', 'test] !")
 

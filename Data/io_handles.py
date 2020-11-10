@@ -8,15 +8,11 @@ logger = logging.getLogger(__name__)
 class TFRecordHandle(object):
 
     def __init__(
-        self, 
-        tokenizer, 
+        self,  
         max_seq_length, 
         max_query_length, 
-        seed=42,
         **kwargs
     ):
-        self.tokenizer = tokenizer
-        self.seed = seed
 
         if max_seq_length> 512 :
             raise ValueError('Max sequence length must be < 512 to avoid indexing errors.')
@@ -28,10 +24,10 @@ class TFRecordHandle(object):
         self.max_seq_length = max_seq_length
         self.max_query_length = max_query_length
 
-    def get_train_dataset(self, data_path, batch_size):
+    def get_train_dataset(self, data_path, batch_size, seed = 42):
         raise NotImplementedError()
     
-    def get_eval_dataset(self, data_path, batch_size, num_skip=0):
+    def get_eval_dataset(self, data_path, batch_size, num_skip = 0):
         dataset = tf.data.TFRecordDataset([data_path])
         dataset = dataset.map( lambda record : self._extract_fn_eval(record)).prefetch(batch_size*1000)
         if num_skip > 0:
@@ -60,23 +56,27 @@ class TFRecordHandle(object):
          
     
     def write_train_example(
-                self, 
-                tf_writer,
-                query,
-                docs,
-                labels
+        self, 
+        tf_writer,
+        tokenizer,
+        query,
+        docs,
+        labels
     ):
         raise NotImplementedError()
     
     def write_eval_example(
-                self, 
-                tf_writer,
-                query,
-                docs,
-                labels,
-                query_id, 
-                doc_ids,
-                len_gt
+        self, 
+        tf_writer, 
+        tokenizer,
+        query,
+        docs,
+        labels,
+        ids_writer, 
+        i_ids,
+        query_id, 
+        doc_ids,
+        len_gt
     ):
         raise NotImplementedError()
     
@@ -90,15 +90,13 @@ class TFRecordHandle(object):
 class PassageHandle(TFRecordHandle):
     def __init__(
         self, 
-        tokenizer, 
         max_seq_length=512, 
         max_query_length=64, 
-        seed=42,
         **kwargs
     ):
-        super(PassageHandle,self).__init__(tokenizer, max_seq_length, max_query_length, seed, **kwargs)
+        super(PassageHandle,self).__init__(max_seq_length, max_query_length, **kwargs)
         
-    def get_train_dataset (self, data_path, batch_size):
+    def get_train_dataset (self, data_path, batch_size, seed = 42):
         dataset = tf.data.TFRecordDataset([data_path])
         dataset = dataset.map( lambda record : self._extract_fn_train(record)).prefetch(batch_size*1000)
         count = dataset.reduce(0, lambda x, _: x + 1)
@@ -121,7 +119,7 @@ class PassageHandle(TFRecordHandle):
                     drop_remainder=True)
         return dataset, count.numpy() 
 
-    def _extract_fn_train(self,data_record):
+    def _extract_fn_train(self, data_record):
         features = {
           "query_ids": tf.io.FixedLenSequenceFeature(
               [], tf.int64, allow_missing=True),
@@ -189,11 +187,15 @@ class PassageHandle(TFRecordHandle):
         return input_ids, input_mask, segment_ids
 
 
-    def write_train_example(self, tf_writer,
-                                         query,
-                                         docs,
-                                         labels):
-        query_ids = self.tokenizer.encode(
+    def write_train_example(
+        self, 
+        tf_writer,
+        tokenizer,
+        query,
+        docs,
+        labels
+    ):
+        query_ids = tokenizer.encode(
                 query,
                 add_special_tokens = True,
                 max_length = self.max_query_length,
@@ -204,7 +206,7 @@ class PassageHandle(TFRecordHandle):
                 int64_list=tf.train.Int64List(value=query_ids))
                         
         for i, (doc_text, label) in enumerate(zip(docs, labels)):
-            doc_ids = self.tokenizer.encode(
+            doc_ids = tokenizer.encode(
                     doc_text,
                     add_special_tokens = False,
                     max_length = self.max_seq_length - len(query_ids) -1, 
@@ -226,15 +228,21 @@ class PassageHandle(TFRecordHandle):
             example = tf.train.Example(features=features)
             tf_writer.write(example.SerializeToString())
     
-    def write_eval_example(self, tf_writer, ids_writer, i_ids,
-                                            query,
-                                            docs,
-                                            labels,
-                                            query_id, 
-                                            doc_ids,
-                                            len_gt):
+    def write_eval_example(
+        self, 
+        tf_writer, 
+        tokenizer,
+        query,
+        docs,
+        labels,
+        ids_writer, 
+        i_ids,
+        query_id, 
+        doc_ids,
+        len_gt
+    ):
 
-        query_ids = self.tokenizer.encode(
+        query_ids = tokenizer.encode(
                     query,
                     add_special_tokens=True,
                     max_length= self.max_query_length,
@@ -249,7 +257,7 @@ class PassageHandle(TFRecordHandle):
                         
         for i, (doc_id, doc_text, label) in enumerate(zip(doc_ids, docs, labels)):
             
-            doc_ids = self.tokenizer.encode(
+            doc_ids = tokenizer.encode(
                     doc_text,
                     add_special_tokens = False,
                     max_length = self.max_seq_length - len(query_ids) -1, 
@@ -285,13 +293,11 @@ class DocumentHandle(TFRecordHandle):
 
     def __init__(
         self, 
-        tokenizer, 
         max_seq_length=512, 
         max_query_length=64,  
-        seed=42, 
         **kwargs
     ):
-        super(DocumentHandle,self).__init__(tokenizer, max_seq_length, max_query_length, seed, **kwargs)
+        super(DocumentHandle,self).__init__(max_seq_length, max_query_length, **kwargs)
 
         self.max_title_length = kwargs['max_title_length'] if 'max_title_length' in kwargs.keys() else 64
         self.chunk_size = kwargs['chunk_size'] if 'chunk_size' in kwargs.keys() else 384
@@ -299,17 +305,23 @@ class DocumentHandle(TFRecordHandle):
         
     
     
-    def write_eval_example(self, tf_writer, ids_writer, i_ids,
-                                            query,
-                                            docs,
-                                            labels,
-                                            query_id, 
-                                            doc_ids,
-                                            len_gt):
+    def write_eval_example(
+        self, 
+        tf_writer, 
+        tokenizer,
+        query,
+        docs,
+        labels,
+        ids_writer, 
+        i_ids,
+        query_id, 
+        doc_ids,
+        len_gt
+    ):
         # q_id_tf = tf.train.Feature(
         #             bytes_list=tf.train.BytesList(value=[query_id.encode()]))
 
-        query_ids = self.tokenizer.encode(
+        query_ids = tokenizer.encode(
                     query,
                     add_special_tokens=True,
                     max_length= self.max_query_length,
@@ -327,7 +339,7 @@ class DocumentHandle(TFRecordHandle):
             # d_id_tf = tf.train.Feature(
             #             bytes_list=tf.train.BytesList(value=[doc_id.encode()]))
 
-            title_ids = self.tokenizer.encode(
+            title_ids = tokenizer.encode(
                     doc_title,
                     add_special_tokens=False,
                     max_length= self.max_title_length,
@@ -337,7 +349,7 @@ class DocumentHandle(TFRecordHandle):
             title_ids_tf = tf.train.Feature(
                 int64_list=tf.train.Int64List(value=title_ids))
             
-            doc_ids = self.tokenizer.encode(
+            doc_ids = tokenizer.encode(
                     doc_text,
                     add_special_tokens=False,
                     truncation = False,
@@ -442,28 +454,32 @@ class DocumentSplitterHandle(DocumentHandle):
 
     def __init__(
         self, 
-        tokenizer,
         max_seq_length=512, 
         max_query_length=64,  
-        seed=42, 
         **kwargs
     ):
-        super(DocumentSplitterHandle,self).__init__(tokenizer, max_seq_length, max_query_length, seed, **kwargs)
-        self.stride = kwargs['stride'] if 'stride' in kwargs.keys() else 384
+        super(DocumentSplitterHandle,self).__init__(max_seq_length, max_query_length, **kwargs)
+        self.stride = kwargs['stride'] if 'stride' in kwargs.keys() else 192
         if self.stride < 1 :
             raise ValueError('Stride musbt at least 1 token.')
         elif self.stride > self.chunk_size:
             raise ValueError('Stride can\'t be > to chunk size.')
 
-    def write_eval_example(self, tf_writer, ids_writer, i_ids,
-                                query,
-                                docs,
-                                labels,
-                                query_id, 
-                                doc_ids,
-                                len_gt):
+    def write_eval_example(
+        self, 
+        tf_writer, 
+        tokenizer,
+        query,
+        docs,
+        labels,
+        ids_writer, 
+        i_ids,
+        query_id, 
+        doc_ids,
+        len_gt
+    ):
 
-        query_ids = self.tokenizer.encode(
+        query_ids = tokenizer.encode(
                     query,
                     add_special_tokens = True,
                     max_length = self.max_query_length,
@@ -479,7 +495,7 @@ class DocumentSplitterHandle(DocumentHandle):
         for i, (doc_id, doc_tuple, label) in enumerate(zip(doc_ids, docs, labels)):
             doc_title, doc_text = doc_tuple
 
-            title_ids = self.tokenizer.encode(
+            title_ids = tokenizer.encode(
                     doc_title,
                     add_special_tokens=False,
                     max_length=self.max_title_length,
@@ -492,7 +508,7 @@ class DocumentSplitterHandle(DocumentHandle):
             labels_tf = tf.train.Feature(
                 int64_list=tf.train.Int64List(value=[label]))
             
-            doc_ids = self.tokenizer.encode(
+            doc_ids = tokenizer.encode(
                     doc_text,
                     add_special_tokens=False,
                     truncation = False,
@@ -501,8 +517,7 @@ class DocumentSplitterHandle(DocumentHandle):
             i = 0
             while len(doc_ids)>0:
                 passage_ids = doc_ids[:self.chunk_size]
-                #passage_text = self.tokenizer.convert_tokens_to_string(self.tokenizer.convert_ids_to_tokens(passage_ids))
-                print(passage_ids)
+                #passage_text = tokenizer.convert_tokens_to_string(tokenizer.convert_ids_to_tokens(passage_ids))
                 doc_ids_tf = tf.train.Feature(
                     int64_list=tf.train.Int64List(value=passage_ids))
                 
@@ -531,12 +546,16 @@ class DocumentSplitterHandle(DocumentHandle):
             #next document
         return i_ids
 
-    def write_train_example(self, tf_writer,
-                                query,
-                                docs,
-                                labels):
+    def write_train_example(
+        self, 
+        tf_writer,
+        tokenizer,
+        query,
+        docs,
+        labels
+    ):
 
-        query_ids = self.tokenizer.encode(
+        query_ids = tokenizer.encode(
                     query,
                     add_special_tokens=True,
                     max_length= self.max_query_length,
@@ -549,7 +568,7 @@ class DocumentSplitterHandle(DocumentHandle):
         for i, (doc_tuple, label) in enumerate(zip(docs, labels)):
             doc_title, doc_text = doc_tuple
 
-            title_ids = self.tokenizer.encode(
+            title_ids = tokenizer.encode(
                     doc_title,
                     add_special_tokens=False,
                     max_length=self.max_title_length, 
@@ -562,7 +581,7 @@ class DocumentSplitterHandle(DocumentHandle):
             labels_tf = tf.train.Feature(
                 int64_list=tf.train.Int64List(value=[label]))
             
-            doc_ids = self.tokenizer.encode(
+            doc_ids = tokenizer.encode(
                     doc_text,
                     add_special_tokens=False,
                     truncation  = False,
@@ -619,7 +638,7 @@ class DocumentSplitterHandle(DocumentHandle):
         
         return (features, label_ids)
 
-    def get_train_dataset (self, data_path, batch_size):
+    def get_train_dataset (self, data_path, batch_size, seed = 42):
         dataset = tf.data.TFRecordDataset([data_path])
         dataset = dataset.map( lambda record : self._extract_fn_train(record)).prefetch(batch_size*1000)
         count = dataset.reduce(0, lambda x, _: x + 1)

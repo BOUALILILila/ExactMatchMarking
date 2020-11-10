@@ -43,24 +43,29 @@ python ./prep_data.py --collection msmarco \
                       --set_name ${collection}_${query_field}
 ```
 * Apply a marking strategy to highlight the exact match signals and save the dataset to a TFRecord file.
-```
-strategy=<base, sim_doc, sim_pair, pre_doc, pre_pair>
-data_path = <path/to/pairs/file>
-```
-```
-python ./convert_dataset_to_tfrecord.py --collection msmarco \
-                                        --set train \
-                                        --strategy $strategy \
-                                        --data_path ${data_path} \
-                                        --output_dir ${output_dir} \
-                                        --set_name ${collection}_${strategy} # dataset name
-```
+
 **Note:** For the strategies pre_doc and pre_pair--that is our implementation of MarkedBERT[[1]](#1)--, use this script to add the precise markers to the vocabulary and initialize their embeddings:
 ```
 python ./add_marker_tokens.py --save_dir <path/out/save/vocabulary/and/model> \
                               --tokenizer_name_path bert-base-uncased \# default used in our experiments 
                               --name bert_base_uncased # the name of the extended vocabualry file (pre_tokenizer_${name}, pre_model_${name})
 ```
+
+```
+strategy=<base, sim_doc, sim_pair, pre_doc, pre_pair>
+data_path = <path/to/pairs/file>
+tokenizer_path_or_name = <path/to/tokenizer, tokenizer name in transformers> # default to 'bert-base-uncased' this need to be set to the path of the augmented tokenizer with precise marker tokens for the precise marking strategies.
+```
+```
+python ./convert_dataset_to_tfrecord.py --collection msmarco \
+                                        --set train \
+                                        --strategy $strategy \
+                                        --tokenizer_name_path ${tokenizer_path_or_name}
+                                        --data_path ${data_path} \
+                                        --output_dir ${output_dir} \
+                                        --set_name ${collection}_${strategy} # dataset name
+```
+
 ### Fine-tune BERT
 
 ---
@@ -85,7 +90,7 @@ data_path
    |--body
    |--title_body
 ```
-- Where topics must contain the topic files of the three collections ```topics.{collection}.txt``` in this format: 
+- Where topics contain the topic files of the three collections ```topics.{collection}.txt``` in this format: 
 ```
 {Qid}\t{title|description}
 ```
@@ -99,18 +104,19 @@ anserini_path=<path/to/anserini/root>
 index_path=<path/to/lucene/index>
 data_path=<path/to/data/root>
 ```
-We use the default retrieve parameters: K=1000 for retrieval depth and use the RM3 exapansion. Can be changed via the parameters (K and rm3). the parameter ```use_title_doc```(default False) indicates whether to consider the document title or not.
+We use the default retrieve parameters: K=1000 for retrieval depth and use the RM3 exapansion. Can be changed via the parameters (K and rm3). the parameter ```use_title_doc``` indicates that the document title is considered.
 ```
 python ./retrieve.py --collection ${collection} --topic_field ${topic_field} \
                                --data_path ${data_path} \
                                --anserini_path ${anserini_path} \
-                               --index ${index_path}
+                               --index ${index_path} \  
+                               --rm3 \
+                               --use_title_doc 
 ```
 
 ### Prepare the passages !
 The retriever generates 3 files: 
 * The run file: ```{qid}\t{did}\t{score}\t{rank}\t{judgement}```
-* The queries file: containing the test queries, if all the queries are assessed this is the exact same file as the inital topic file.
 * The corpus file: ```{did}\t{title}\t{body}``` , if ```use_title_doc``` was set to False the title field would be empty('').
 
 Before marking we construct a unique data file for each collection to be used for generating the datasets of the different strategies.
@@ -125,7 +131,7 @@ collection_path=<path/to/corpus/file>
 ```
 python ./prep_data.py --collection $collection \
                       --output_dir ${output_dir} \
-                      --queries_path${queries_path} \
+                      --queries_path ${queries_path} \
                       --run_path ${run_path} \
                       --collection_path ${collection_path} \
                       --set_name ${collection}_${query_field}
@@ -135,10 +141,12 @@ Use a marking strategy to highlight the exact match signals of the document w.r.
 ```
 strategy=<base, sim_doc, sim_pair, pre_doc, pre_pair>
 data_path = <path/to/pairs/file>
+tokenizer_path_or_name = <path/to/tokenizer, tokenizer name in transformers> # default to 'bert-base-uncased' this need to be set to the path of the augmented tokenizer with precise marker tokens for the precise marking strategies.
 ```
 ```
 python ./convert_dataset_to_tfrecord.py --collection $collection \
                                         --strategy $strategy \
+                                        --tokenizer_name_path ${tokenizer_path_or_name} \
                                         --data_path ${data_path} \
                                         --output_dir ${output_dir} \
                                         --set_name ${collection}_${query_field}_${strategy} # dataset name

@@ -1,31 +1,46 @@
 import os, time
+import typing
 import tensorflow as tf
-from .io_handles import DocumentHandle, PassageHandle
+from transformers import PreTrainedTokenizer, AutoTokenizer
+
+from .io_handles import DocumentHandle, PassageHandle, TFRecordHandle
 from .marker_utils import Marker
 
-class DataProcessor(object):  
+class DataProcessor(object): 
+
+    def __init__(
+        self, 
+        handle: TFRecordHandle,
+    ):
+        self.handle = handle
+     
     
-    def get_train_dataset (self, data_path, batch_size):
+    def get_train_dataset (self, data_path: str, batch_size: int, seed: int = 42):
         """ Reads a TFRecord dataset """
         raise NotImplementedError()
 
-    def get_eval_dataset (self, data_path, batch_size, num_skip=0):
+    def get_eval_dataset (self, data_path: str, batch_size: int, num_skip: int = 0):
         """ Reads a TFRecord file containing eval examples and returns a TF dataset"""
         raise NotImplementedError ()
     
     def prepare_train_dataset(
                         self,
-                        data_path, 
-                        output_dir,
+                        tokenizer: typing.Union[PreTrainedTokenizer, AutoTokenizer],
+                        marker: Marker,
+                        data_path: str, 
+                        output_dir: str,
+                        set_name: str,
     ):
         """ preprocess the raw training data and save it as pairs/tfrecord """
         raise NotImplementedError()
     
     def prepare_inference_dataset(
                             self,
-                            data_path, 
-                            output_dir,
-                            set_name,
+                            tokenizer: typing.Union[PreTrainedTokenizer, AutoTokenizer],
+                            marker: Marker,
+                            data_path: str, 
+                            output_dir: str,
+                            set_name: str,
     ):
         """ preprocess the raw inference data from a run file and save it as pairs/tfrecord """
         raise NotImplementedError()
@@ -33,21 +48,20 @@ class DataProcessor(object):
 class DocumentProcessor(DataProcessor):
 
     def __init__(self, 
-                document_handle: DocumentHandle,
-                marker: Marker,
+                handle: DocumentHandle,
                 ):
-        super().__init__()
-        self.handle = document_handle
-        self.marker = marker
+        super().__init__(handle)
     
-    def get_eval_dataset (self, data_path, batch_size, num_skip=0):
+    def get_eval_dataset(self, data_path: str, batch_size: int, num_skip: int = 0):
         return self.handle.get_eval_dataset(data_path, batch_size, num_skip)
 
     def prepare_inference_dataset(
                         self,
-                        data_path, 
-                        output_dir,
-                        set_name,
+                        tokenizer: typing.Union[PreTrainedTokenizer, AutoTokenizer],
+                        marker: Marker,
+                        data_path: str, 
+                        output_dir: str,
+                        set_name: str,
     ):
         tf_writer = tf.io.TFRecordWriter(f"{output_dir}/dataset_{set_name}.tf")
         #tsv_writer = open(f"{output_dir}/pairs_{set_name}.tsv", 'w')
@@ -72,10 +86,12 @@ class DocumentProcessor(DataProcessor):
                               
                 qid, did, query, title ,doc, label, len_gt_query = line.rstrip().split('\t')
 
-                m_query, m_title, m_doc = self.marker.mark(query, title, doc)
+                m_query, m_title, m_doc = marker.mark(query, title, doc)
 
                 # write tfrecord
-                i_ids = self.handle.write_eval_example(tf_writer, ids_writer, i_ids, m_query, [(m_title,m_doc)], [int(label)], qid, [did], int(len_gt_query)) ## stride pass_len
+                i_ids = self.handle.write_eval_example(tf_writer, tokenizer, 
+                                m_query, [(m_title,m_doc)], [int(label)], 
+                                ids_writer, i_ids, qid, [did], int(len_gt_query)) 
                 #tsv_writer.write(f"{qid}\t{m_query}\t{did}\t{m_title}\t{m_doc}\t{label}\t{len_gt_query}\n")
         tf_writer.close()
         #tsv_writer.close()
@@ -84,24 +100,23 @@ class DocumentProcessor(DataProcessor):
 class PassageProcessor(DataProcessor):
 
     def __init__(self, 
-                passage_handle: PassageHandle,
-                marker: Marker,
+                handle: PassageHandle,
                 ):
-        super().__init__()
-        self.passage_handle = passage_handle
-        self.marker = marker
+        super().__init__(handle)
 
-    def get_train_dataset (self, data_path, batch_size):
-        return self.passage_handle.get_train_dataset(data_path, batch_size)
+    def get_train_dataset (self, data_path: str, batch_size: int, seed: int = 42):
+        return self.handle.get_train_dataset(data_path, batch_size)
     
-    def get_eval_dataset (self, data_path, batch_size, num_skip=0):
-        return self.passage_handle.get_eval_dataset(data_path, batch_size, num_skip)
+    def get_eval_dataset (self, data_path: str, batch_size: int, num_skip: int = 0):
+        return self.handle.get_eval_dataset(data_path, batch_size, num_skip)
 
     def prepare_train_dataset(
                         self,
-                        data_path, 
-                        output_dir,
-                        set_name,
+                        tokenizer: typing.Union[PreTrainedTokenizer, AutoTokenizer],
+                        marker: Marker,
+                        data_path: str, 
+                        output_dir: str,
+                        set_name: str,
     ):
         tf_writer = tf.io.TFRecordWriter(f"{output_dir}/dataset_{set_name}_train.tf")
         tsv_writer = open(f"{output_dir}/pairs_{set_name}_train.tsv", 'w')
@@ -123,18 +138,20 @@ class PassageProcessor(DataProcessor):
                         hours_remaining))
 
                 query, doc, label = line.rstrip().split('\t')
-                q, p = self.marker.mark(query, doc)
+                q, p = marker.mark(query, doc)
                 # write tfrecord
-                self.passage_handle.write_train_example(tf_writer, q, [p], [int(label)])
+                self.handle.write_train_example(tf_writer, tokenizer, q, [p], [int(label)])
                 tsv_writer.write(f"{q}\t{p}\t{label}\n")
         tf_writer.close()
         tsv_writer.close()
 
     def prepare_inference_dataset(
                         self,
-                        data_path, 
-                        output_dir,
-                        set_name,
+                        tokenizer: typing.Union[PreTrainedTokenizer, AutoTokenizer],
+                        marker: Marker,
+                        data_path: str, 
+                        output_dir: str,
+                        set_name: str,
     ):
         tf_writer = tf.io.TFRecordWriter(f"{output_dir}/dataset_{set_name}.tf")
         tsv_writer = open(f"{output_dir}/pairs_{set_name}.tsv", 'w')
@@ -158,12 +175,13 @@ class PassageProcessor(DataProcessor):
                         hours_remaining))
                               
                 qid, pid, query, doc, label, len_gt_query = line.rstrip().split('\t')
-                q, p = self.marker.mark(query, doc)
+                q, p = marker.mark(query, doc)
 
                 # write tfrecord
-                i_ids = self.passage_handle.write_eval_example(tf_writer, ids_writer, i_ids, q, [p], [int(label)], qid, [pid], int(len_gt_query))
+                i_ids = self.handle.write_eval_example(tf_writer, tokenizer,
+                             q, [p], [int(label)], ids_writer, i_ids, 
+                             qid, [pid], int(len_gt_query))
                 tsv_writer.write(f"{qid}\t{q}\t{pid}\t{p}\t{label}\t{len_gt_query}\n")
         tf_writer.close()
         tsv_writer.close()
         ids_writer.close()
-

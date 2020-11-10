@@ -8,7 +8,7 @@ from shutil import copyfileobj
 
 
 
-def retrieve(args, TOPIC_FIELDS):
+def retrieve(col, args):
 
     collection = args.collection
     anserini_path = args.anserini_path
@@ -20,14 +20,11 @@ def retrieve(args, TOPIC_FIELDS):
     fqrel = os.path.join(data_path, 'qrels', 'qrels.' + collection + '.txt')
 
     args.topic_field = args.topic_field.lower()
-
-    if args.topic_field not in TOPIC_FIELDS:
-        raise ValueError(f'Unknown topic field: {args.topic_field}. Topic field must be in:{TOPIC_FIELDS}')
-
+    
     ftopic = os.path.join(data_path, 'topics', args.topic_field , 'topics.' + collection + '.txt')
 
     qid2docid = get_relevant_docids(fqrel)
-    qid2text = get_query(ftopic)
+    qid2text = get_query(col, ftopic, args.topic_field)
     #qid2title = get_query(os.path.join(data_path, 'topics', 'title', 'topics.' + collection + '.txt'))
     
     test_qids = get_test_qids(fqrel)
@@ -63,37 +60,38 @@ def retrieve(args, TOPIC_FIELDS):
             docsearch.search_document(searcher, qid2docid, qid2text, test_qids,
                                       output_fn + str(folder_idx), args.topic_field,
                                       args.use_doc_title,
-                                      collection, args.K, topics)
+                                      col, args.K, topics)
 
             folder_idx += 1
 
-        frun = os.path.join(args.data_path, 'datasets', out_suff, collection + '_run_' + args.topic_field + args.K + '.tsv')
+        frun = os.path.join(args.data_path, 'datasets', out_suff, f'{collection}_run_{args.topic_field}_{args.K}.tsv')
         #Concat folds 
         with open(frun, 'w') as outfile:
-            for infile in [f"{output_fn}{n}_run_{args.topic_field}.tsv" for n in range(1, 6)]:
+            for infile in [f"{output_fn}{n}_run_{args.topic_field}_{args.K}.tsv" for n in range(1, 6)]:
                 copyfileobj(open(infile), outfile)
         # Remove folds files
-        for infile in [f"{output_fn}{n}_run_{args.topic_field}.tsv" for n in range(1, 6)]:
+        for infile in [f"{output_fn}{n}_run_{args.topic_field}_{args.K}.tsv" for n in range(1, 6)]:
                 os.remove(infile)
 
-        fdocs= os.path.join(args.data_path, 'datasets', out_suff, collection + '_docs_' + args.topic_field +args.K + '.tsv')
+        fdocs= os.path.join(args.data_path, 'datasets', out_suff, f'{collection}_docs_{args.topic_field}_{args.K}.tsv')
         with open(fdocs, 'w') as outfile:
-            for infile in [f'{output_fn}{n}_docs_{args.topic_field}.tsv' for n in range(1, 6)]:
+            for infile in [f'{output_fn}{n}_docs_{args.topic_field}_{args.K}.tsv' for n in range(1, 6)]:
                 copyfileobj(open(infile), outfile)
-        for infile in [f'{output_fn}{n}_docs_{args.topic_field}.tsv' for n in range(1, 6)]:
+        for infile in [f'{output_fn}{n}_docs_{args.topic_field}_{args.K}.tsv' for n in range(1, 6)]:
                 os.remove(infile)
     
     # Core collections
     else:
         searcher = docsearch.build_searcher(k1=0.9, b=0.4, index_path=index_path, rm3=args.rm3)
         docsearch.search_document(searcher, qid2docid, qid2text, test_qids, output_fn,
-                                 args.topic_field, args.use_doc_title, collection, K=args.K)
-    
-    with open(output_fn + '_queries_' + args.topic_field +'.tsv', 'w', encoding='utf-8') as out_queries:
-        for qid in qid2text:
-            if qid in test_qids:
-                #out_queries.write('\t'.join([qid,qid2title[qid],qid2text[qid]])+'\n')
-                out_queries.write('\t'.join([qid, qid2text[qid]])+'\n')
+                                 args.topic_field, args.use_doc_title, col, K=args.K)
+                                 
+    # Save the queries file if it is the first parsing of the topics
+    if not os.path.exists(ftopic):
+        with open(ftopic, 'w', encoding='utf-8') as out_queries:
+            for qid in qid2text:
+                if qid in test_qids:
+                    out_queries.write('\t'.join([qid, qid2text[qid]])+'\n')
     
     time_passed = int(time.time() - start_time)
     print(f'Retrieving Done. Durration: {time_passed} s')

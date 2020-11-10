@@ -1,6 +1,7 @@
-'''This code is inspired from Birch (https://github.com/castorini/birch/tree/master/src/utils/)'''
+'''Some of this code is copied from Birch (https://github.com/castorini/birch/tree/master/src/utils/)'''
 import sys
 import re
+import os
 import ssl
 from importlib import reload
 
@@ -26,75 +27,27 @@ def get_test_qids(fqrel):
     return qids
 
 
-def get_title(ftopic, collection):
-    qid2query = {}
-    empty = False
-    qid = -1
-    with open(ftopic) as f:
-        for line in f:
-            if empty is True and int(qid) >= 0:
-                qid2query[qid] = line.replace('\n', '').strip()
-                empty = False
-            # Get topic number
-            tag = 'Number: '
-            ind = line.find(tag)
-            if ind >= 0:
-                # Remove </num> from core18
-                end_ind = -7 if collection == 'core18' else -1
-                qid = str(int(line[ind + len(tag):end_ind]))
-            # Get topic title
-            tag = 'title'
-            ind = line.find('<{}>'.format(tag))
-            if ind >= 0:
-                query = line[ind + len(tag) + 3:-1].strip()
-
-                if len(query) == 0:
-                    empty = True
-                else:
-                    qid2query[qid] = query.lower()
-
-    return qid2query
-
-def get_description(ftopic, collection):
-    qid2query = {}
-    empty = False
-    qid = -1
-    with open(ftopic) as f:
-        for line in f:
-            tag = 'desc'
-            ind = line.find('</{}>'.format(tag))
-            if ind >= 0:
-                    empty = False  
-            tag = 'narr'
-            ind = line.find('<{}>'.format(tag))
-            if ind >= 0:
-                    empty = False
-            if empty is True and int(qid) >= 0:
-
-                qid2query[qid] += ' '+line.rstrip()
-            # Get topic number
-            tag = 'Number: '
-            ind = line.find(tag)
-            if ind >= 0:
-                # Remove </num> from core18
-                end_ind = -7 if collection == 'core18' else -1
-                qid = str(int(line[ind + len(tag):end_ind]))
-            # Get topic description
-            tag = 'desc'
-            ind = line.find('<{}>'.format(tag))
-            if ind >= 0:
-                    qid2query[qid] = ''
-                    empty = True    
-    return qid2query
-
-def get_query(ftopic):
+def get_query(col, ftopic, topic_field):
     qid2query={}
-    with open (ftopic) as f:
-      for line in f:
-        qid, topic = line.rstrip().split('\t')
-        if qid not in qid2query:
-          qid2query[qid] = topic
+    if os.path.exists(ftopic):
+        with open (ftopic) as f:
+            for line in f:
+                qid, topic = line.rstrip().split('\t')
+                if qid not in qid2query:
+                    qid2query[qid] = topic
+
+    else: # need to create the file in the first execution
+        queries = col.parse_queries(ftopic)
+        if topic_field == 'title':
+            qid2query = queries[topic_field]
+        elif topic_field =='description':
+            qid2query = queries['desc']
+        # elif topic_field =='desc_key_words':
+        #     for qid, desc in queries['desc'].items():
+        #         qid2query[qid] = udel_converter.convert_query_to_udel(desc)
+    
     return qid2query
+        
 
 # def build_udel_queries(ftopic):
 #     qid2desc = get_description(ftopic,'robust04')
@@ -140,35 +93,10 @@ def clean_html(html, collection):
     cleaned = re.sub(r"&nbsp;", " ", cleaned)
     cleaned = re.sub(r"  ", " ", cleaned)
     cleaned = re.sub(r"\t", " ", cleaned)
-    if 'robust' not in collection:
+    if 'robust' not in collection.lower():
         cleaned = re.sub(r"\n", " ", cleaned)
         cleaned = re.sub(r"\s+", " ", cleaned)
     return cleaned.strip()
 
 
-def parse_doc_from_index(content):
-    ls = content.split('\n')
-    see_text = False
-    see_title = False
-    doc = ''
-    title = ''
-    for l in ls:
-        l = l.replace('\n', '').strip()
-        if '<TEXT>' in l:
-            see_text = True
-        elif '</TEXT>' in l:
-            break
-        elif see_text:
-            if l == '<P>' or l == '</P>':
-                continue
-            doc += l + ' '
-        elif '<HEADLINE>' in l:
-            see_title =True
-        elif '</HEADLINE>' in l :
-            see_title = False
-        elif see_title:
-            if l == '<P>' or l == '</P>':
-                continue
-            title += l + ' '
-    return title.strip(), doc.strip()
 

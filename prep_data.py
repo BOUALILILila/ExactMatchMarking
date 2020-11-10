@@ -1,18 +1,13 @@
 import argparse
 import os
-from Data import (
-    TRECDocumentPrepFromRetriever, 
-    MsMarcoPassagePrep, 
-    get_collection_prep, 
-    get_collection_names,
-)
+from Data import get_available_collections, get_collection
 
 
 def main():
     
     parser = argparse.ArgumentParser(description='PairsDataPrep')
 
-    parser.add_argument('--collection', type=str, required=True, help=f'{get_collection_names}')
+    parser.add_argument('--collection', type=str, required=True, help=f'{get_available_collections()}')
     parser.add_argument('--set', type=str, default='test')
     parser.add_argument('--output_dir', type=str, required=True)
     parser.add_argument('--queries_path', type=str, required=False,
@@ -34,15 +29,16 @@ def main():
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
         
+    col = get_collection(args.collection)
 
-    prep = get_collection_prep(args.collection)()
+    prep = col.get_prep()
     
-
-    if args.set == 'test':
+    if args.set in ('test', 'dev'):
         prep.convert_eval_dataset(args)
-    
     elif args.set == 'train':
         prep.convert_train_dataset(args)
+    else :
+        raise ValueError("Set must be in ['train', 'dev', 'test] !")
 
 if __name__ == '__main__':
     main()
