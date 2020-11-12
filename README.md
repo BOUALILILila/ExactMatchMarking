@@ -90,7 +90,7 @@ data_path
    |--body
    |--title_body
 ```
-- Where topics contain the topic files of the three collections ```topics.{collection}.txt``` in this format: 
+- Where topics contain the original topic files of the three collections ```topics.{collection}.txt``` that can be found in Anserini ressources. After the first execution using title|description queries a new file is created for each collection and topic field under the directory ```data_path/topics/{topic_field}/`topics.{collection}.txt``` with this format: 
 ```
 {Qid}\t{title|description}
 ```

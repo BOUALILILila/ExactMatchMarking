@@ -101,6 +101,21 @@ class TopKPrepFromRetriever(DataPrep):
     
 class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
 
+    def __init__(
+        self, 
+        how ='tokens', 
+        plen=150, 
+        overlap=50, 
+        tlen=-1,
+        max_pass_per_doc = 30,
+    ):
+        super().__init__()
+        self.split = (how=='words')
+        self.plen = plen
+        self.overlap = overlap
+        self.tlen = tlen
+        self.max_pass_per_doc = max_pass_per_doc
+
     def convert_eval_dataset(
         self,
         args,
@@ -129,8 +144,8 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
             num_eval_docs, 
             output_dir
     ):
-
-        output_path = os.path.join(output_dir, f'run_{set_name}_doc.tsv')
+        suff = 'passages' if self.split else 'doc'
+        output_path = os.path.join(output_dir, f'run_{set_name}_{suff}.tsv')
         start_time = time.time()
         random_title = list(collection.keys())[0]
         
@@ -157,8 +172,15 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
                         _doc = strip_html_xml_tags(doc)
                         clean_doc = clean_text(_doc)
                         clean_title = clean_text(title)
-                        
-                        doc_writer.write("\t".join((query_id, doc_title, clean_query, title,
+
+                        if self.split :
+                            passages = self._split_doc(clean_title, clean_doc)
+                            for pos, p in passages.items():
+                                id_pass = f'{doc_title}_{pos}'
+                                doc_writer.write("\t".join((query_id, id_pass, clean_query,
+                                                    p, str(label), str(len_gt_query))) + "\n")
+                        else: 
+                            doc_writer.write("\t".join((query_id, doc_title, clean_query, title,
                                                     clean_doc, str(label), str(len_gt_query))) + "\n")
 
                     if idx % 10 == 0:
@@ -167,6 +189,38 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
                         est_hours = (len(data) - idx) * time_passed / (max(1.0, idx) * 3600)
                         print(f'Estimated total hours to save: {est_hours}')
 
+    def _split_doc(self, title, doc):
+        """ Modified from https://github.com/canjiali/PARADE/blob/master/generate_data.py
+        :param title: str
+        :param doc: str
+        :return: Dict[]
+        """
+        title_words = title.strip().split(' ')
+        doc_words = doc.strip().split(' ')
+
+        trunc_title = ' '.join(title_words[:self.tlen])
+        if not trunc_title.endswith('.'):
+            trunc_title +=  '.'
+
+        pos, idx_start, idx_end = 0, 0, 0
+        passages = dict()
+        while idx_start < len(doc_words):
+            idx_end = idx_start + self.plen
+            if idx_end >= len(doc_words):
+                idx_end = len(doc_words)
+            # if the last one is shorter than 'overlap', it is already in the previous passage.
+            if len(passages) > 0 and idx_end - idx_start <= self.overlap:
+                break
+            p = trunc_title + ' ' + ' '.join(doc_words[idx_start:idx_end])
+            passages[pos] = p
+            pos += 1
+            idx_start = idx_start + self.plen - self.overlap
+
+        if len(passages) > self.max_pass_per_doc:
+            chosen_ids = sorted(random.sample(range(1, len(passages) - 1), self.max_pass_per_doc - 2))
+            chosen_ids = [0] + chosen_ids + [len(passages) - 1]
+            passages = {idx:passages[idx] for idx in chosen_ids}
+        return passages
 
     def _load_run(self, path):
         """Loads run into a dict of key: query_id, value: list of candidate doc ids."""

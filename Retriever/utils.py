@@ -27,7 +27,7 @@ def get_test_qids(fqrel):
     return qids
 
 
-def get_query(col, ftopic, topic_field):
+def get_query(col, ftopic):
     qid2query={}
     if os.path.exists(ftopic):
         with open (ftopic) as f:
@@ -37,7 +37,11 @@ def get_query(col, ftopic, topic_field):
                     qid2query[qid] = topic
 
     else: # need to create the file in the first execution
-        queries = col.parse_queries(ftopic)
+        topic_path = ftopic.split('/')
+        filename = topic_path.pop()
+        topic_field = topic_path.pop()
+        path = os.path.join(os.path.join(*topic_path),filename)
+        queries = col.parse_queries(path)
         if topic_field == 'title':
             qid2query = queries[topic_field]
         elif topic_field =='description':

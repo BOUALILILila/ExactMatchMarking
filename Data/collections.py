@@ -1,4 +1,4 @@
-import json
+import json, sys
 from collections import defaultdict
 from typing import Optional, Tuple
 
@@ -60,16 +60,16 @@ class TRECCollection(Collection):
     def parse_queries(self, queries_path):
         """  
         parse trec topics from https://github.com/capreolus-ir/capreolus/blob/413b3bacc5cb9afd6c36e465a804d30456cb31a4/capreolus/utils/trec.py
-        :param queryfn:
+        :param queries_path:
         :return:
         """
         title, desc, narr = defaultdict(list), defaultdict(list), defaultdict(list)
         block = None
-        if queryfn.endswith(".gz"):
+        if queries_path.endswith(".gz"):
             openf = gzip.open
         else:
             openf = open
-        with openf(queryfn, "rt") as f:
+        with openf(queries_path, "rt") as f:
             for line in f:
                 line = line.strip()
                 if line.startswith("<num>"):
@@ -84,16 +84,23 @@ class TRECCollection(Collection):
                 elif line.startswith("<title>"):
                     # <title>  query here
                     title[qid].extend(line.strip().split()[1:])
-                    if title[qid][0] == 'Topic:':
-                        title[qid] = title[qid][1:]
+                    if len(title[qid])>0:
+                        if title[qid][0] == 'Topic:':
+                            title[qid].pop(0)
                     block = "title"
                 elif line.startswith("<desc>"):
                     # <desc> description \n description
-                    # desc[qid].extend(line.strip().split()[1:])
+                    desc[qid].extend(line.strip().split()[1:])
+                    if len(desc[qid])>0:
+                        if desc[qid][0] == 'Description:':
+                            desc[qid].pop(0)
                     block = "desc"
                 elif line.startswith("<narr>"):
                     # same format as <desc>
-                    # narr[qid].extend(line.strip().split()[1:])
+                    narr[qid].extend(line.strip().split()[1:])
+                    if len(narr[qid])>0:
+                        if narr[qid][0] == 'Narrative:':
+                            narr[qid].pop(0)
                     block = "narr"
                 elif line.startswith("</top>") or line.startswith("<top>"):
                     block = None
@@ -101,10 +108,19 @@ class TRECCollection(Collection):
                     block = None
                 elif block == "title":
                     title[qid].extend(line.strip().split())
+                    if len(title[qid])>0:
+                        if title[qid][0] == 'Topic:':
+                            title[qid].pop(0)
                 elif block == "desc":
                     desc[qid].extend(line.strip().split())
+                    if len(desc[qid])>0:
+                        if desc[qid][0] == 'Description:':
+                            desc[qid].pop(0)
                 elif block == "narr":
                     narr[qid].extend(line.strip().split())
+                    if len(narr[qid])>0:
+                        if narr[qid][0] == 'Narrative:':
+                            narr[qid].pop(0)
         out = {}
         if len(title) > 0:
             out["title"] = {qid: " ".join(terms) for qid, terms in title.items()}
@@ -115,11 +131,14 @@ class TRECCollection(Collection):
 
         return out
 
-    def get_prep(self):
-        if self.how == 'words':
-            return None
-        else:
-            return TRECDocumentPrepFromRetriever()
+    def get_prep(
+        self,
+        plen = 150, 
+        overlap = 50, 
+        tlen = 0,
+        max_pass_per_doc = 30,
+    ):
+        return TRECDocumentPrepFromRetriever(self.how, plen, overlap, tlen, max_pass_per_doc)
     
     def get_processor(self, max_seq_len = 512, max_query_len = 64, **kwargs):
         if self.how == 'words':
