@@ -203,7 +203,7 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
         doc_words = doc.strip().split(' ')
 
         trunc_title = ' '.join(title_words[:self.tlen])
-        if not trunc_title.endswith('.'):
+        if len(trunc_title)>0 and not trunc_title.endswith('.'):
             trunc_title +=  '.'
 
         pos, idx_start, idx_end = 0, 0, 0
