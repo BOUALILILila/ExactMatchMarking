@@ -25,7 +25,7 @@ def retrieve(col, args):
     ftopic = os.path.join(topics_dir, args.topic_field , 'topics.' + collection + '.txt') 
 
     qid2docid = get_relevant_docids(fqrel)
-    qid2text = get_query(col, ftopic, topics_dir, topic_field)
+    qid2text = get_query(col, ftopic, topics_dir, args.topic_field)
     #qid2title = get_query(os.path.join(data_path, 'topics', 'title', 'topics.' + collection + '.txt'))
     
     test_qids = get_test_qids(fqrel)
