@@ -33,6 +33,7 @@ def main():
     if args.topic_field.lower() not in TOPIC_FIELDS:
         raise ValueError(f'Unknown topic field: {args.topic_field}. Topic field must be in:{TOPIC_FIELDS}')
 
+    print('===== ',args.data_path)
     col = get_collection(args.collection)
 
     retrieve(col, args)
