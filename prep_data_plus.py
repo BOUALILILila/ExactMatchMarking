@@ -45,6 +45,7 @@ def main():
     col = get_collection(args.collection, args.how)
 
     if isinstance(col, DocumentCol):
+        print(col.how)
         prep = col.get_prep(args.plen, args.overlap, args.tlen, args.max_pass_per_doc)
     else:
         prep = col.get_prep()
@@ -56,8 +57,6 @@ def main():
     else :
         raise ValueError("Set must be in ['train', 'dev', 'test] !")
 
-
-    print(stats)
     with open(os.path.join(args.output_dir,f'prep_stats_{args.set_name}.json'), 'w') as fp:
         json.dump(stats, fp)
 

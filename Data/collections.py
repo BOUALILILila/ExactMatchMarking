@@ -12,11 +12,7 @@ def get_available_collections():
 def get_collection(collection_name, how=None):
     collection = collection_name.lower()
     if collection in COLLECTIONS.keys():
-        col_class = COLLECTIONS[collection]
-        if DocumentCol in col_class.__bases__ and how is not None:
-            return COLLECTIONS[collection](how)
-        else :
-            return COLLECTIONS[collection]()
+        return COLLECTIONS[collection](how)
     else :
         raise ValueError(f'Unrecognized collection {collection_name}')
 
@@ -43,7 +39,7 @@ class Collection(object):
 
 class MsMarco(Collection):
 
-    def __init__(self):
+    def __init__(self, *args):
         super().__init__('MsMarco')
 
     def parse_queries(self, queries_path):
