@@ -1,5 +1,5 @@
 pyjnius==1.3.0
-bs4>=4.7.1
+bs4>=0.0.1
 nltk>=3.4.4
 spacy>=2.3.2
 tensorflow>=2.3.0

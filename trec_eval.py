@@ -5,7 +5,6 @@ import os
 import json
 import pytrec_eval
     
-from Data import get_collection_names
 
 def trec_eval(preds_path: str, qrels_path: str, metrics: set):
 
