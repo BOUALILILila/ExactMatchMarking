@@ -37,6 +37,7 @@ def get_query(col, ftopic, topics_dir, topic_field):
                     qid2query[qid] = topic
 
     else: # need to create the file in the first execution
+        filename = ftopic.split('/')[-1]
         path = os.path.join(topics_dir,filename)
         queries = col.parse_queries(path)
         if topic_field == 'title':
