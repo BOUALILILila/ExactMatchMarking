@@ -64,12 +64,14 @@ class TopKPrepFromRetriever(DataPrep):
         collection = {}
         with open(path) as f:
             for i, line in enumerate(f):
-                    try:
-                        doc_id, doc_title, doc_text = line.rstrip('\n').split('\t')
-                    except:
-                        print(line)
-                        sys.exit()
-                    collection[doc_id] = (doc_title, doc_text.replace('\n', ' '))
+                    doc_id, doc_title, doc_body = line.rstrip('\n').split('\t')
+
+                    body = strip_html_xml_tags(doc_body)
+                    clean_body = clean_text(body)
+                    title = strip_html_xml_tags(doc_title)
+                    clean_title = clean_text(title)
+
+                    collection[doc_id] = (clean_title, clean_body)
                     if i % 10000 == 0:
                         print(f'Loading collection, doc {i}')
         return collection
@@ -133,6 +135,8 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
         print('Loading Collection...')
         collection = self._load_collection(args.collection_path)
 
+        if self.split:
+            collection = self._split_docs(collection)
         print('Saving Data File...')
         self._convert_dataset(data, collection, args.set_name, args.num_eval_docs, args.output_dir)
 
@@ -171,19 +175,15 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
                     len_gt_query = len(qrels)
 
                     for label, doc_title in zip(labels, doc_titles):
-                        title, doc = collection[doc_title]
-                        _doc = strip_html_xml_tags(doc)
-                        clean_doc = clean_text(_doc)
-                        clean_title = clean_text(title)
-
                         if self.split :
-                            passages = self._split_doc(clean_title, clean_doc)
+                            passages = collection[doc_title]
                             self.stats[doc_title] = len(passages)
                             for pos, p in passages.items():
                                 id_pass = f'{doc_title}_passage-{pos}'
                                 doc_writer.write("\t".join((query_id, id_pass, clean_query,
                                                     p, str(label), str(len_gt_query))) + "\n")
                         else: 
+                            title, doc = collection[doc_title]
                             doc_writer.write("\t".join((query_id, doc_title, clean_query, title,
                                                     clean_doc, str(label), str(len_gt_query))) + "\n")
 
@@ -192,6 +192,15 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
                         time_passed = time.time() - start_time
                         est_hours = (len(data) - idx) * time_passed / (max(1.0, idx) * 3600)
                         print(f'Estimated total hours to save: {est_hours}')
+
+
+    def _split_docs(self, collection):
+        pass_collection = dict()
+        for did in collection:
+            title, doc = collection[did]
+            passages = self._split_doc(title, doc)
+            pass_collection[did] = passages
+        return pass_collection
 
     def _split_doc(self, title, doc):
         """ Modified from https://github.com/canjiali/PARADE/blob/master/generate_data.py
