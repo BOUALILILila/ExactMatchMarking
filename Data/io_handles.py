@@ -285,7 +285,14 @@ class PassageHandle(TFRecordHandle):
 
             example = tf.train.Example(features=features)
             tf_writer.write(example.SerializeToString())
-            ids_writer.write("\t".join([str(i_ids), query_id, doc_id, '0'])+"\n")
+
+            pass_pos = '0'
+            id_split = doc_id.split('_passage-')
+            if len(id_split)==2:
+                doc_id = id_split[0]
+                pass_pos =  id_split[1]
+
+            ids_writer.write("\t".join([str(i_ids), query_id, doc_id, pass_pos])+"\n")
             i_ids += 1
         return i_ids
 

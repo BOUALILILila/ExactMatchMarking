@@ -178,9 +178,9 @@ class PassageProcessor(DataProcessor):
                 q, p = marker.mark(query, doc)
 
                 # write tfrecord
-                i_ids = self.handle.write_eval_example(tf_writer, tokenizer,
-                             q, [p], [int(label)], ids_writer, i_ids, 
-                             qid, [pid], int(len_gt_query))
+                # i_ids = self.handle.write_eval_example(tf_writer, tokenizer,
+                #              q, [p], [int(label)], ids_writer, i_ids, 
+                #              qid, [pid], int(len_gt_query))
                 tsv_writer.write(f"{qid}\t{q}\t{pid}\t{p}\t{label}\t{len_gt_query}\n")
         tf_writer.close()
         tsv_writer.close()

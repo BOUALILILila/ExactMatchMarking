@@ -40,7 +40,7 @@ def main():
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
         
-    col = get_collection(args.collection)
+    col = get_collection(args.collection, how='words')
 
     tokenizer = BertTokenizerFast.from_pretrained(args.tokenizer_name_path)
     

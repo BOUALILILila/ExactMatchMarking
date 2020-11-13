@@ -6,7 +6,7 @@ from .convert_to_udel import UdelConverter
 from .data_utils import TRECDocumentPrepFromRetriever, MsMarcoPassagePrep
 from .io_handles import PassageHandle, DocumentSplitterHandle
 from .data_processors import DocumentProcessor, PassageProcessor
-from .collections import get_available_collections, get_collection
+from .collections import get_available_collections, get_collection, DocumentCol
 
 # COLLECTIONS = ['msmarco', 'robust04', 'core17', 'core18']
 

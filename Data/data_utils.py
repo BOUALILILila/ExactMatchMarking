@@ -116,6 +116,8 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
         self.tlen = tlen
         self.max_pass_per_doc = max_pass_per_doc
 
+        self.stats = dict()
+
     def convert_eval_dataset(
         self,
         args,
@@ -135,6 +137,7 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
         self._convert_dataset(data, collection, args.set_name, args.num_eval_docs, args.output_dir)
 
         print('Done!')
+        return self.stats
 
     def _convert_dataset(
             self,
@@ -175,8 +178,9 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
 
                         if self.split :
                             passages = self._split_doc(clean_title, clean_doc)
+                            self.stats[doc_title] = len(passages)
                             for pos, p in passages.items():
-                                id_pass = f'{doc_title}_{pos}'
+                                id_pass = f'{doc_title}_passage-{pos}'
                                 doc_writer.write("\t".join((query_id, id_pass, clean_query,
                                                     p, str(label), str(len_gt_query))) + "\n")
                         else: 

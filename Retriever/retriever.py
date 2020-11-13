@@ -88,6 +88,9 @@ def retrieve(col, args):
                                  
     # Save the queries file if it is the first parsing of the topics
     if not os.path.exists(ftopic):
+        topic_dir = os.path.join(data_path, 'topics', args.topic_field)
+        if not os.path.exists(topic_dir):
+            os.makedirs(topic_dir)
         with open(ftopic, 'w', encoding='utf-8') as out_queries:
             for qid in qid2text:
                 if qid in test_qids:

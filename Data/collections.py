@@ -9,10 +9,14 @@ from .data_processors import PassageProcessor, DocumentProcessor, DataProcessor
 def get_available_collections():
     return list(COLLECTIONS.keys())
 
-def get_collection(collection_name):
+def get_collection(collection_name, how=None):
     collection = collection_name.lower()
     if collection in COLLECTIONS.keys():
-        return COLLECTIONS[collection]()
+        col_class = COLLECTIONS[collection]
+        if DocumentCol in col_class.__bases__ and how is not None:
+            return COLLECTIONS[collection](how)
+        else :
+            return COLLECTIONS[collection]()
     else :
         raise ValueError(f'Unrecognized collection {collection_name}')
 
@@ -28,7 +32,7 @@ class Collection(object):
     def parse_queries(self, queries_path):
         raise NotImplementedError()
 
-    def parse_doc(self, content, use_doc_title = False):
+    def parse_doc(self, content):
         raise NotImplementedError()
 
     def get_prep(self) -> DataPrep:
@@ -55,7 +59,22 @@ class MsMarco(Collection):
         handle = PassageHandle(max_seq_len, max_query_len, **kwargs)
         return PassageProcessor(handle, marker)
 
-class TRECCollection(Collection):
+class DocumentCol(Collection):
+
+    def parse_doc(self, content, use_doc_title = False)-> Tuple[str,str]:
+        raise NotImplementedError()
+    
+    def get_prep(
+        self,
+        plen = 150, 
+        overlap = 50, 
+        tlen = 0,
+        max_pass_per_doc = 30,
+    ) -> DataPrep:
+        raise NotImplementedError()
+
+
+class TRECCollection(DocumentCol):
 
     def parse_queries(self, queries_path):
         """  
