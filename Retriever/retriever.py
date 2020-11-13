@@ -21,10 +21,11 @@ def retrieve(col, args):
 
     args.topic_field = args.topic_field.lower()
     
-    ftopic = os.path.join(data_path, 'topics', args.topic_field , 'topics.' + collection + '.txt')
+    topics_dir = os.path.join(data_path, 'topics')
+    ftopic = os.path.join(topics_dir, args.topic_field , 'topics.' + collection + '.txt') 
 
     qid2docid = get_relevant_docids(fqrel)
-    qid2text = get_query(col, ftopic)
+    qid2text = get_query(col, ftopic, topics_dir, topic_field)
     #qid2title = get_query(os.path.join(data_path, 'topics', 'title', 'topics.' + collection + '.txt'))
     
     test_qids = get_test_qids(fqrel)
@@ -88,7 +89,7 @@ def retrieve(col, args):
                                  
     # Save the queries file if it is the first parsing of the topics
     if not os.path.exists(ftopic):
-        topic_dir = os.path.join(data_path, 'topics', args.topic_field)
+        topic_dir = os.path.join(topics_dir, args.topic_field)
         if not os.path.exists(topic_dir):
             os.makedirs(topic_dir)
         with open(ftopic, 'w', encoding='utf-8') as out_queries:
