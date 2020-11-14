@@ -205,10 +205,10 @@ class Core17(TRECCollection):
         title = ''
         if use_doc_title:
             paraphs = content.split('\n', 1)
-            title = paraphs[0]
-            content=''
             if len(paraphs)>1 :
+                title = paraphs[0]
                 content = paraphs[1]
+
         return title, content
 
 class Core18(TRECCollection):
