@@ -202,6 +202,9 @@ class Core17(TRECCollection):
         self.how = how.lower()
 
     def parse_doc(self, content, use_doc_title = False):
+        """
+        This parsing needs to be curated not all documents have titles
+        """
         title = ''
         if use_doc_title:
             paraphs = content.split('\n', 1)

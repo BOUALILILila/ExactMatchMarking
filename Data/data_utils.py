@@ -211,14 +211,16 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
         title_words = title.strip().split(' ')
         doc_words = doc.strip().split(' ')
 
-        trunc_title = ' '.join(title_words[:self.tlen])
-        if len(trunc_title)>0 and not trunc_title.endswith('.'):
-            trunc_title +=  '.'
+        trunc_title = title_words[:self.tlen]
+        if len(trunc_title)>0 and trunc_title[-1] != '.':
+            trunc_title.append('.')
 
         pos, idx_start, idx_end = 0, 0, 0
         passages = dict()
+        real_plen = self.plen - len(trunc_title)
+        trunc_title = ' '.join(trunc_title)
         while idx_start < len(doc_words):
-            idx_end = idx_start + self.plen
+            idx_end = idx_start + real_plen
             if idx_end >= len(doc_words):
                 idx_end = len(doc_words)
             # if the last one is shorter than 'overlap', it is already in the previous passage.
@@ -227,7 +229,7 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
             p = trunc_title + ' ' + ' '.join(doc_words[idx_start:idx_end])
             passages[pos] = p
             pos += 1
-            idx_start = idx_start + self.plen - self.overlap
+            idx_start = idx_start + real_plen - self.overlap
 
         if len(passages) > self.max_pass_per_doc:
             chosen_ids = sorted(random.sample(range(1, len(passages) - 1), self.max_pass_per_doc - 2))
