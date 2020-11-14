@@ -154,7 +154,7 @@ class PassageProcessor(DataProcessor):
                         set_name: str,
     ):
         tf_writer = tf.io.TFRecordWriter(f"{output_dir}/dataset_{set_name}.tf")
-        tsv_writer = open(f"{output_dir}/pairs_{set_name}.tsv", 'w')
+        #tsv_writer = open(f"{output_dir}/pairs_{set_name}.tsv", 'w')
         ids_writer = open(f"{output_dir}/query_pass_ids_{set_name}.tsv", 'w')
         i_ids = 0
 
@@ -178,10 +178,10 @@ class PassageProcessor(DataProcessor):
                 q, p = marker.mark(query, doc)
 
                 # write tfrecord
-                # i_ids = self.handle.write_eval_example(tf_writer, tokenizer,
-                #              q, [p], [int(label)], ids_writer, i_ids, 
-                #              qid, [pid], int(len_gt_query))
-                tsv_writer.write(f"{qid}\t{q}\t{pid}\t{p}\t{label}\t{len_gt_query}\n")
+                i_ids = self.handle.write_eval_example(tf_writer, tokenizer,
+                             q, [p], [int(label)], ids_writer, i_ids, 
+                             qid, [pid], int(len_gt_query))
+                #tsv_writer.write(f"{qid}\t{q}\t{pid}\t{p}\t{label}\t{len_gt_query}\n")
         tf_writer.close()
-        tsv_writer.close()
+        #tsv_writer.close()
         ids_writer.close()
