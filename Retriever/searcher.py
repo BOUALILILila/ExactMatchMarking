@@ -8,8 +8,6 @@ import glob
 from io import open
 
 
-from .utils import clean_html
-
 #anserini version 0.9.4
 
 class Searcher:
@@ -67,18 +65,12 @@ class Searcher:
                             doc_ids.add(docno)
                             title, content = collection.parse_doc(hits[i].raw, use_doc_title=use_doc_title)
                                 
-                            clean_content = clean_html(content, collection=col_name)
-                            clean_content = clean_content.replace('\n', ' ')
-                            clean_content = clean_content.replace('\t', ' ')
                             if use_doc_title:
-                                clean_title = clean_html(title, collection=col_name)
-                                clean_title = clean_title.replace('\n', ' ')
-                                clean_title = clean_title.replace('\t', ' ')
-                                if clean_title in ('None'):
-                                    clean_title = ''
+                                if title in ('None'):
+                                    title = ''
                             else:
-                                clean_title = ''
-                            out_docs.write('{}\t{}\t{}\n'.format(docno,clean_title, clean_content))
+                                title = ''
+                            out_docs.write('{}\t{}\t{}\n'.format(docno, title, content))
                             out_docs.flush()
 
     

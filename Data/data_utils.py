@@ -77,12 +77,12 @@ class TopKPrepFromRetriever(DataPrep):
             for i, line in enumerate(f):
                     doc_id, doc_title, doc_body = line.rstrip('\n').split('\t')
 
-                    body = strip_html_xml_tags(doc_body)
-                    clean_body = clean_text(body)
-                    title = strip_html_xml_tags(doc_title)
-                    clean_title = clean_text(title)
+                    # body = strip_html_xml_tags(doc_body)
+                    # clean_body = clean_text(body)
+                    # title = strip_html_xml_tags(doc_title)
+                    # clean_title = clean_text(title)
 
-                    collection[doc_id] = (clean_title, clean_body)
+                    collection[doc_id] = (doc_title, doc_body)
                     if i % 10000 == 0:
                         print(f'Loading collection, doc {i}')
         return collection
