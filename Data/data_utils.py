@@ -16,7 +16,7 @@ def clean_output_text(func):
             results = (results,)
         clean_results = ()
         for item in results: 
-            clean_results += (clean_text(strip_html_xml_tags(item)),)
+            clean_results += (clean_text(clean_html(item)),)
         return (clean_results if len(clean_results)>1 else clean_results[0])
     return wrapper
 
@@ -38,7 +38,30 @@ def clean_text(text):
     return text
 
 def strip_html_xml_tags(text):
+    """Only works on valid html documents"""
     return BeautifulSoup(text, "lxml").text
+
+def clean_html(html):
+    """
+    Copied from NLTK package.
+    Remove HTML markup from the given string.
+    :param html: the HTML string to be cleaned
+    """
+    html = str(html)
+    # First we remove inline JavaScript/CSS:
+    cleaned = re.sub(r"(?is)<(script|style).*?>.*?(</\1>)", "", html.strip())
+    # Then we remove html comments. This has to be done before removing regular
+    # tags since comments can contain '>' characters.
+    cleaned = re.sub(r"(?s)<!--(.*?)-->[\n]?", "", cleaned)
+    # Next we can remove the remaining tags:
+    cleaned = re.sub(r"(?s)<.*?>", " ", cleaned)
+    # Finally, we deal with whitespace
+    cleaned = re.sub(r"&nbsp;", " ", cleaned)
+    cleaned = re.sub(r"  ", " ", cleaned)
+    cleaned = re.sub(r"\t", " ", cleaned)
+    cleaned = re.sub(r"\n", " ", cleaned)
+    cleaned = re.sub(r"\s+", " ", cleaned)
+    return cleaned.strip()
 
 """ Intermediate corpus format converter """
 class DataPrep(object):

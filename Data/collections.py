@@ -252,15 +252,16 @@ class Gov2(TRECCollection):
     @clean_output_text  
     def parse_doc(self, content, use_doc_title = False):
         title = ''
-        soup = BeautifulSoup(content, "lxml")
-        if use_doc_title:
-            title_tag = soup.html.head.title
-            title = '' if title_tag is None else title_tag.text
-            content = soup.html.body.text
-        else:
-            content = soup.html.text
+        # # The documents are not well formed html documents ==> bs4 can't work
+        # soup = BeautifulSoup(content, "lxml")
+        # if use_doc_title:
+        #     title_tag = soup.html.head.title
+        #     title = '' if title_tag is None else title_tag.text
+        #     content = soup.html.body.text
+        # else:
+        #     content = soup.html.text
         return title, content
-        
+    
 
 COLLECTIONS={
     'msmarco' : MsMarco,
