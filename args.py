@@ -17,9 +17,12 @@ class DataTrainingArguments:
     collection: str =field(
         metadata={"help": "collection name"}
     )
-    marking_strategy: str =field(
-        metadata={"help": "base, sin_pair, pre_pair,...."}
+    how: Optional[str] =field(
+        default='tokens', metadata={"help": "Split at word level or token level, default to token level."}
     )
+    # marking_strategy: str =field(
+    #     metadata={"help": "base, sin_pair, pre_pair,...."}
+    # )
     train_data_dir:Optional[str] = field(
         default=None, metadata={"help": "The directory where the training data is."}
     )
@@ -68,7 +71,7 @@ class DataTrainingArguments:
     )
 
     def __post_init__(self):
-        col = get_collection(self.collection)
+        col = get_collection(self.collection, self.how)
         self.doc_processor = col.get_processor(self.max_seq_length)
 
 

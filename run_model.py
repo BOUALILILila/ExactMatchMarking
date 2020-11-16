@@ -37,8 +37,8 @@ def main():
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
     if (
-        os.path.exists(training_args.output_dir)
-        and os.listdir(training_args.output_dir)
+        tf.io.gfile.exists(training_args.output_dir)
+        and tf.io.gfile.listdir(training_args.output_dir)
         and training_args.do_train
         and not training_args.overwrite_output_dir
     ):
@@ -84,15 +84,11 @@ def main():
                 cache_dir=model_args.cache_dir,
             )
 
-    eval_dataset = None
-    query_doc_ids = None
-    eval_qrels = None
-    num_eval_examples = 0
 
         # Get datasets
         if training_args.do_train:
             filename = os.path.join(data_args.train_data_dir, f'dataset_train_{data_args.train_set_name}.tf')
-            if os.path.exists(filename):
+            if tf.io.gfile.exists(filename):
                 train_dataset, num_train_examples = data_args.doc_processor.get_train_dataset(filename, 
                                                                             training_args.train_batch_size, training_args.seed)
             else:
@@ -103,12 +99,12 @@ def main():
         if training_args.do_eval or training_args.do_early_stopping:
             filename = os.path.join(data_args.eval_data_dir, f'dataset_dev_{data_args.eval_set_name}.tf')
             ids_file = os.path.join(data_args.eval_data_dir, f'query_pass_ids_dev_{data_args.eval_set_name}.tsv')
-            if os.path.exists(filename):
+            if tf.io.gfile.exists(filename):
                 eval_dataset, num_eval_examples = data_args.doc_processor.get_eval_dataset(filename, 
                                                                         training_args.eval_batch_size)
             else:
                 raise IOError('File does not exist: ', filename)
-            if os.path.exists(ids_file):
+            if tf.io.gfile.exists(ids_file):
                 query_doc_ids = pd.read_csv(ids_file, 
                                             header=None, index_col=None, delimiter='\t', 
                                             names=['id','qid','did','pass'], 
@@ -118,7 +114,7 @@ def main():
 
             if data_args.eval_qrels_file is not None:
                 qrels_file = os.path.join(data_args.eval_data_dir, f'{data_args.eval_qrels_file}.tsv')
-                if os.path.exists(qrels_file):
+                if tf.io.gfile.exists(qrels_file):
                     eval_qrels = pd.read_csv(qrels_file,
                                 header=None, index_col=None, delimiter='\t', names=['qid','did','label'], 
                                 dtype={'qid':str,'did':str, 'label':int})
@@ -193,14 +189,14 @@ def main():
         logger.info("Evaluate the following checkpoints: %s", checkpoints)
 
         filename = os.path.join(data_args.eval_data_dir, f'dataset_test_{data_args.test_set_name}.tf')
-        if os.path.exists(filename):
+        if tf.io.gfile.exists(filename):
             test_dataset, num_test_examples = data_args.doc_processor.get_eval_dataset(filename, 
                                                     training_args.eval_batch_size)
         else: 
             raise IOError('File does not exist: ', filename)
 
         ids_file = os.path.join(data_args.eval_data_dir, f'query_pass_ids_test_{data_args.test_set_name}.tsv')
-        if os.path.exists(ids_file):
+        if tf.io.gfile.exists(ids_file):
             query_doc_ids = pd.read_csv(ids_file,
                                 header=None, index_col=None, delimiter='\t', 
                                 names=['id','qid','did','pass'],
@@ -210,7 +206,7 @@ def main():
 
         if data_args.test_qrels_file:
             qrels_file = os.path.join(data_args.eval_data_dir, f'{data_args.test_qrels_file}.tsv')
-            if os.path.exists(qrels_file):
+            if tf.io.gfile.exists(qrels_file):
                 test_qrels = pd.read_csv(qrels_file, 
                             header=None, index_col=None, delimiter='\t', 
                             names=['qid','did','label'], 
