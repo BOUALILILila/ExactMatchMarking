@@ -2,9 +2,23 @@ import collections
 import os , time
 import re, sys
 from bs4 import BeautifulSoup
+import functools
 
 
 from .convert_to_udel import UdelConverter
+
+
+def clean_output_text(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        results = func(*args, **kwargs)
+        if not isinstance(results, tuple):
+            results = (results,)
+        clean_results = ()
+        for item in results: 
+            clean_results += (clean_text(strip_html_xml_tags(item)),)
+        return (clean_results if len(clean_results)>1 else clean_results[0])
+    return wrapper
 
 """ Cleaning utilities """
 
@@ -15,9 +29,6 @@ def clean_text(text):
         enc_text = t.decode('utf-8')
     except (UnicodeDecodeError, UnicodeEncodeError) as e:
         enc_text = text
-
-    #line break
-    text= enc_text.replace('\n',' ')
     
     #
     text = re.sub("’","'",text)

@@ -75,30 +75,7 @@ def get_relevant_docids(fqrel):
                 qid2docid[qid].add(docid)
     return qid2docid
 
-def clean_html(html, collection):
-    """
-    Copied from NLTK package.
-    Remove HTML markup from the given string.
-    :param html: the HTML string to be cleaned
-    :type html: str
-    :rtype: str
-    """
-    html = str(html)
-    # First we remove inline JavaScript/CSS:
-    cleaned = re.sub(r"(?is)<(script|style).*?>.*?(</\1>)", "", html.strip())
-    # Then we remove html comments. This has to be done before removing regular
-    # tags since comments can contain '>' characters.
-    cleaned = re.sub(r"(?s)<!--(.*?)-->[\n]?", "", cleaned)
-    # Next we can remove the remaining tags:
-    cleaned = re.sub(r"(?s)<.*?>", " ", cleaned)
-    # Finally, we deal with whitespace
-    cleaned = re.sub(r"&nbsp;", " ", cleaned)
-    cleaned = re.sub(r"  ", " ", cleaned)
-    cleaned = re.sub(r"\t", " ", cleaned)
-    if 'robust' not in collection.lower():
-        cleaned = re.sub(r"\n", " ", cleaned)
-        cleaned = re.sub(r"\s+", " ", cleaned)
-    return cleaned.strip()
+
 
 
 

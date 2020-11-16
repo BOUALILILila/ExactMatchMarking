@@ -1,8 +1,11 @@
 import json, sys
 from collections import defaultdict
 from typing import Optional, Tuple
+from bs4 import BeautifulSoup
 
-from .data_utils import MsMarcoPassagePrep, TRECDocumentPrepFromRetriever, DataPrep
+from .data_utils import (
+    MsMarcoPassagePrep, TRECDocumentPrepFromRetriever, DataPrep,
+    clean_output_text)
 from .io_handles import PassageHandle, DocumentSplitterHandle, TFRecordHandle
 from .data_processors import PassageProcessor, DocumentProcessor, DataProcessor
 
@@ -44,7 +47,8 @@ class MsMarco(Collection):
 
     def parse_queries(self, queries_path):
         pass
-
+    
+    @clean_output_text
     def parse_doc(self, content):
         return content
 
@@ -57,6 +61,7 @@ class MsMarco(Collection):
 
 class DocumentCol(Collection):
 
+    @clean_output_text
     def parse_doc(self, content, use_doc_title = False)-> Tuple[str,str]:
         raise NotImplementedError()
     
@@ -169,6 +174,7 @@ class Robust04(TRECCollection):
         super().__init__('Robust04')
         self.how = how.lower()
 
+    @clean_output_text
     def parse_doc(self, content, use_doc_title = False):
         ls = content.split('\n')
         see_text = False
@@ -201,6 +207,7 @@ class Core17(TRECCollection):
         super().__init__('Core17')
         self.how = how.lower()
 
+    @clean_output_text
     def parse_doc(self, content, use_doc_title = False):
         """
         This parsing needs to be curated not all documents have titles
@@ -219,7 +226,8 @@ class Core18(TRECCollection):
     def __init__(self, how='tokens'):
         super().__init__('Core18')
         self.how = how.lower()
-        
+
+    @clean_output_text
     def parse_doc(self, content, use_doc_title = False):
         content_json = json.loads(content)
         content = ''
@@ -234,6 +242,24 @@ class Core18(TRECCollection):
                 else:
                     content += '{}\n'.format(each['content'])
         return title, content
+
+class Gov2(TRECCollection):
+
+    def __init__(self, how='tokens'):
+        super().__init__('Gov2')
+        self.how = how.lower()
+
+    @clean_output_text  
+    def parse_doc(self, content, use_doc_title = False):
+        title = ''
+        soup = BeautifulSoup(content, "lxml")
+        if use_doc_title:
+            title_tag = soup.html.head.title
+            title = '' if title_tag is None else title_tag.text
+            content = soup.html.body.text
+        else:
+            content = soup.html.text
+        return title, content
         
 
 COLLECTIONS={
@@ -241,4 +267,5 @@ COLLECTIONS={
     'robust04' : Robust04,
     'core17' : Core17,
     'core18' : Core18,
+    'gov2' : Gov2,
 }
