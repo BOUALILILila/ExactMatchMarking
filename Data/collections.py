@@ -268,4 +268,7 @@ COLLECTIONS={
     'core17' : Core17,
     'core18' : Core18,
     'gov2' : Gov2,
+    'terabyte04.701-750' : Gov2,
+    'terabyte05.751-800' : Gov2,
+    'terabyte06.801-850' : Gov2,
 }
