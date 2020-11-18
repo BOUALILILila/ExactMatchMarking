@@ -203,6 +203,7 @@ class SimPairMarker(Marker):
                     self.stems[stem] = self.stems[stem]+[i] if stem in self.stems else [i]
         marked_q = self._get_query_terms()
 
+        # in case where the doc is actually passages of the same doc so the same title only mark it once
         if title != self.title:
             self.title = title
             self.t = self.nlp(title)
