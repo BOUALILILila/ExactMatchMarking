@@ -42,22 +42,28 @@ def main():
         
     col = get_collection(args.collection, how='words')
 
+    print(args.tokenizer_name_path)
+
     tokenizer = BertTokenizerFast.from_pretrained(args.tokenizer_name_path)
+
+    print(tokenizer.tokenize('[e0] lila [\e0]'))
+    print(tokenizer.encode('[e0]Poliomyelitis[\e0] and Post-[e2]Polio[\e2]'))
     
-    marker = get_marker(args.strategy.lower())
+    
+    # marker = get_marker(args.strategy.lower())
 
-    processor = col.get_processor(args.max_seq_len, args.max_query_len,
-                            max_title_length = args.max_title_len, 
-                            chunk_size = args.chunk_size, 
-                            stride = args.stride)
+    # processor = col.get_processor(args.max_seq_len, args.max_query_len,
+    #                         max_title_length = args.max_title_len, 
+    #                         chunk_size = args.chunk_size, 
+    #                         stride = args.stride)
 
 
-    if args.set in ('test', 'dev'):
-        processor.prepare_inference_dataset(tokenizer, marker, args.data_path, args.output_dir, f'{args.set}_{args.set_name}')
-    elif args.set == 'train':
-        processor.prepare_train_dataset(tokenizer, marker, args.data_path, args.output_dir, f'{args.set}_{args.set_name}')
-    else :
-        raise ValueError("Set must be in ['train', 'dev', 'test] !")
+    # if args.set in ('test', 'dev'):
+    #     processor.prepare_inference_dataset(tokenizer, marker, args.data_path, args.output_dir, f'{args.set}_{args.set_name}')
+    # elif args.set == 'train':
+    #     processor.prepare_train_dataset(tokenizer, marker, args.data_path, args.output_dir, f'{args.set}_{args.set_name}')
+    # else :
+    #     raise ValueError("Set must be in ['train', 'dev', 'test] !")
 
 if __name__ == "__main__":
     main()
