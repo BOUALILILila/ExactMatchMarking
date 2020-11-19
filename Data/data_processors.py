@@ -154,7 +154,7 @@ class PassageProcessor(DataProcessor):
                         set_name: str,
     ):
         tf_writer = tf.io.TFRecordWriter(f"{output_dir}/dataset_{set_name}.tf")
-        # tsv_writer = open(f"{output_dir}/pairs_{set_name}.tsv", 'w')
+        tsv_writer = open(f"{output_dir}/pairs_{set_name}.tsv", 'w')
         ids_writer = open(f"{output_dir}/query_pass_ids_{set_name}.tsv", 'w')
         i_ids = 0
 
@@ -190,9 +190,9 @@ class PassageProcessor(DataProcessor):
                              q, [p], [int(label)], ids_writer, i_ids, 
                              qid, [pid], int(len_gt_query))
                 
-                #tsv_writer.write(f"{qid}\t{q}\t{pid}\t{p}\t{label}\t{len_gt_query}\n")
+                tsv_writer.write(f"{qid}\t{q}\t{pid}\t{p}\t{label}\t{len_gt_query}\n")
         tf_writer.close()
-        # tsv_writer.close()
+        tsv_writer.close()
         ids_writer.close()
 
     def prepare_inference_dataset_doc_level(
@@ -204,7 +204,7 @@ class PassageProcessor(DataProcessor):
                         set_name: str,
     ):
         tf_writer = tf.io.TFRecordWriter(f"{output_dir}/dataset_{set_name}_doc_level_marking.tf")
-        tsv_writer = open(f"{output_dir}/pairs_{set_name}_doc_level_marking.tsv", 'w')
+        #tsv_writer = open(f"{output_dir}/pairs_{set_name}_doc_level_marking.tsv", 'w')
         ids_writer = open(f"{output_dir}/query_pass_ids_{set_name}_doc_level_marking.tsv", 'w')
         i_ids = 0
 
@@ -215,65 +215,59 @@ class PassageProcessor(DataProcessor):
         print('{} examples found.'.format(num_lines))
 
         #
-        prev_did = None
-        all_pass = ''
-        pids = []
-        passages =[]
-        labels =[]
-        #
+        SEP ='[my_passage_separator]'
+
         with open(data_path, 'r') as f:
+            line = f.readline()
+            qid, pid, query, doc, label, len_gt_query = line.rstrip().split('\t')
+            prev_record = [qid, pid.split('_passage-')[0], query, len_gt_query]
+            all_pass = doc + ' ' + SEP +' '
+            pids = [pid]
+            labels = [int(label)]
+
             for i, line in enumerate(f):
                 if i % 1000 == 0:
                     time_passed = int(time.time() - start_time)
                     print('Processed training set, line {} of {} in {} sec'.format(
-                        i, num_lines, time_passed))
+                                i, num_lines, time_passed))
                     hours_remaining = (num_lines - i) * time_passed / (max(1.0, i) * 3600)
                     print('Estimated hours remaining to write the training set: {}'.format(
-                        hours_remaining))
-                              
-                qid, pid, query, doc, label, len_gt_query = line.rstrip().split('\t')
+                                hours_remaining))
 
+                qid, pid, query, doc, label, len_gt_query = line.rstrip().split('\t')
+                        
                 #
                 did, pass_pos = pid.split('_passage-')
-                if prev_did is None :
-                    prev_did = did
+                prev_did = prev_record[1]
 
-                if did != prev_did :
-                    q, all_pass = marker.mark(query, all_pass)
-                    passages = all_pass.split('[my_passage_separator]')
+                if did != prev_did or qid != prev_record[0]:
+                    q, all_pass = marker.mark(prev_record[2], all_pass)
+                    passages = all_pass.split(SEP)
                     i_ids = self.handle.write_eval_example(tf_writer, tokenizer,
-                             q, passages, labels, ids_writer, i_ids, 
-                             qid, pids, int(len_gt_query))
-                    for i, pass_id in enumerate(pids):
-                        tsv_writer.write(f"{qid}\t{q}\t{pass_id}\t{passages[i]}\t{labels[i]}\t{len_gt_query}\n")
+                                    q, passages, labels, ids_writer, i_ids, 
+                                    prev_record[0], pids, int(prev_record[-1]))
+                    # for i, pass_id in enumerate(pids):
+                    #     tsv_writer.write(f"{prev_record[0]}\t{q}\t{pass_id}\t{passages[i]}\t{labels[i]}\t{prev_record[-1]}\n")
                     # next
                     all_pass =''
                     pids = []
-                    prev_did = did
                     labels =[]
-                
-                all_pass += doc + ' ' +'[my_passage_separator]' +' '
+                    prev_record = [qid, did, query, len_gt_query]
+                        
+                all_pass += doc + ' ' + SEP +' '
                 pids.append(pid)
                 labels.append(int(label))
         # last
         q, all_pass = marker.mark(query, all_pass)
-        passages = all_pass.split('[my_passage_separator]')
+        passages = all_pass.split(SEP)
         i_ids = self.handle.write_eval_example(tf_writer, tokenizer,
-                             q, passages, labels, ids_writer, i_ids, 
-                             qid, pids, int(len_gt_query))
-        for i, pass_id in enumerate(pids):
-            tsv_writer.write(f"{qid}\t{q}\t{pass_id}\t{passages[i]}\t{labels[i]}\t{len_gt_query}\n")
-
-                #
-
-                # q, p = marker.mark(query, doc)
-
-                # # write tfrecord
-                # i_ids = self.handle.write_eval_example(tf_writer, tokenizer,
-                #              q, [p], [int(label)], ids_writer, i_ids, 
-                #              qid, [pid], int(len_gt_query))
-                
-                #tsv_writer.write(f"{qid}\t{q}\t{pid}\t{p}\t{label}\t{len_gt_query}\n")
+                                    q, passages, labels, ids_writer, i_ids, 
+                                    qid, pids, int(len_gt_query))
+        # for i, pass_id in enumerate(pids):
+        #     tsv_writer.write(f"{qid}\t{q}\t{pass_id}\t{passages[i]}\t{labels[i]}\t{len_gt_query}\n")
+                        
         tf_writer.close()
-        tsv_writer.close()
+        #tsv_writer.close()
         ids_writer.close()
+
+
