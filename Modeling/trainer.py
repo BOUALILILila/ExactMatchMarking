@@ -556,7 +556,7 @@ class CustomTFTrainer:
         preds_with_ids = pd.merge(df_preds, query_doc_ids, on='id') 
         
         for i, row in preds_with_ids.iterrows():
-            all_preds_file.write("\t".join((str(row['qid']), str(row['did']), str(row['logits_0']), str(row['logits_1']))) + "\n")
+            all_preds_file.write("\t".join((str(row['qid']), str(row['did']), str(row['pass']), str(row['logits_0']), str(row['logits_1']))) + "\n")
 
         all_preds_file.close()
 
