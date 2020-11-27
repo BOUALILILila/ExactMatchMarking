@@ -81,14 +81,14 @@ class SimDocMarker(Marker):
             q = self.nlp(query)
             self.stems = set()
             for token in q:
-                if not (token.is_punct or token.is_stop or (token in stopwords)):
+                if not (token.is_punct or token.is_stop or (token.text.lower() in stopwords)):
                     self.stems.add(self.stem(token.text.lower()))
 
         marked_doc = []
         
         for i,term in enumerate(d):
             marked_doc.append(term.text)
-            if not (term.is_punct or term.is_stop or (term in stopwords)):
+            if not (term.is_punct or term.is_stop or (term.text.lower() in stopwords)):
                 stem = self.stem(term.text.lower())
                 for q_stem in self.stems:
                     if q_stem == stem:
@@ -105,7 +105,7 @@ class SimDocMarker(Marker):
             q = self.nlp(query)
             self.stems = set()
             for token in q:
-                if not (token.is_punct or token.is_stop or (token in stopwords)):
+                if not (token.is_punct or token.is_stop or (token.text.lower() in stopwords)):
                     self.stems.add(self.stem(token.text.lower()))
         if title != self.title:
             self.title = title
@@ -113,7 +113,7 @@ class SimDocMarker(Marker):
             self.title_terms = []
             for i,term in enumerate(self.t):
                 self.title_terms.append(term.text)
-                if not (term.is_punct or term.is_stop or (term in stopwords)):
+                if not (term.is_punct or term.is_stop or (term.text.lower() in stopwords)):
                     stem = self.stem(term.text.lower())
                     for q_stem in self.stems:
                         if q_stem == stem:
@@ -123,7 +123,7 @@ class SimDocMarker(Marker):
         marked_doc = []
         for i,term in enumerate(d):
             marked_doc.append(term.text)
-            if not (term.is_punct or term.is_stop or (term in stopwords)):
+            if not (term.is_punct or term.is_stop or (term.text.lower() in stopwords)):
                 stem = self.stem(term.text.lower())
                 for q_stem in self.stems:
                     if q_stem == stem:
@@ -163,7 +163,7 @@ class SimPairMarker(Marker):
             self.stems = dict()
             for i,token in enumerate(self.q):
                 self.query_terms.append(token.text)
-                if not (token.is_punct or token.is_stop or (token in stopwords)):
+                if not (token.is_punct or token.is_stop or (token.text.lower() in stopwords)):
                     stem = self.stem(token.text.lower())
                     self.stems[stem] = self.stems[stem]+[i] if stem in self.stems else [i]
         marked_q = self._get_query_terms()
@@ -172,7 +172,7 @@ class SimPairMarker(Marker):
         marked_doc = []
         for i,term in enumerate(d):
             marked_doc.append(term.text)
-            if not (term.is_punct or term.is_stop or (term in stopwords)):
+            if not (term.is_punct or term.is_stop or (term.text.lower() in stopwords)):
                 stem = self.stem(term.text.lower())
                 for q_stem in self.stems:
                     if q_stem == stem:
@@ -198,7 +198,7 @@ class SimPairMarker(Marker):
             self.stems = dict()
             for i,token in enumerate(self.q):
                 self.query_terms.append(token.text)
-                if not (token.is_punct or token.is_stop or (token in stopwords)):
+                if not (token.is_punct or token.is_stop or (token.text.lower() in stopwords)):
                     stem = self.stem(token.text.lower())
                     self.stems[stem] = self.stems[stem]+[i] if stem in self.stems else [i]
         marked_q = self._get_query_terms()
@@ -211,7 +211,7 @@ class SimPairMarker(Marker):
             self.mark_stem = dict()
             for i,term in enumerate(self.t):
                 self.title_terms.append(term.text)
-                if not (term.is_punct or term.is_stop or (term in stopwords)):
+                if not (term.is_punct or term.is_stop or (term.text.lower() in stopwords)):
                     stem = self.stem(term.text.lower())
                     for q_stem in self.stems:
                         if q_stem == stem:
@@ -223,7 +223,7 @@ class SimPairMarker(Marker):
         marked_doc = []
         for i,term in enumerate(d):
             marked_doc.append(term.text)
-            if not (term.is_punct or term.is_stop or (term in stopwords)):
+            if not (term.is_punct or term.is_stop or (term.text.lower() in stopwords)):
                 stem = self.stem(term.text.lower())
                 for q_stem in self.stems:
                     if q_stem == stem:
@@ -258,7 +258,7 @@ class PrePassMarker(Marker):
             self.stem_to_id = dict()
             q_i = 0
             for token in q:
-                if not (token.is_punct or token.is_stop or (token in stopwords)):
+                if not (token.is_punct or token.is_stop or (token.text.lower() in stopwords)):
                     stem = self.stem(token.text.lower())
                     if stem not in self.stem_to_id :
                         self.stem_to_id[stem] = q_i
@@ -267,7 +267,7 @@ class PrePassMarker(Marker):
         marked_doc = []
         for i,term in enumerate(d):
             marked_doc.append(term.text)
-            if not (term.is_punct or term.is_stop or (term in stopwords)):
+            if not (term.is_punct or term.is_stop or (term.text.lower() in stopwords)):
                 stem = self.stem(term.text.lower())
                 for q_stem in self.stem_to_id:
                     if q_stem == stem:
@@ -287,7 +287,7 @@ class PrePassMarker(Marker):
             self.stem_to_id = dict()
             q_i = 0
             for token in q:
-                if not (token.is_punct or token.is_stop or (token in stopwords)):
+                if not (token.is_punct or token.is_stop or (token.text.lower() in stopwords)):
                     stem = self.stem(token.text.lower())
                     if stem not in self.stem_to_id :
                         self.stem_to_id[stem] = q_i
@@ -298,7 +298,7 @@ class PrePassMarker(Marker):
             self.title_terms = []
             for i,term in enumerate(self.t):
                 self.title_terms.append(term.text)
-                if not (term.is_punct or term.is_stop or (term in stopwords)):
+                if not (term.is_punct or term.is_stop or (term.text.lower() in stopwords)):
                     stem = self.stem(term.text.lower())
                     for q_stem in self.stem_to_id:
                         if q_stem == stem:
@@ -309,7 +309,7 @@ class PrePassMarker(Marker):
         marked_doc = []
         for i,term in enumerate(d):
             marked_doc.append(term.text)
-            if not (term.is_punct or term.is_stop or (term in stopwords)):
+            if not (term.is_punct or term.is_stop or (term.text.lower() in stopwords)):
                 stem = self.stem(term.text.lower())
                 for q_stem in self.stem_to_id:
                     if q_stem == stem:
@@ -348,7 +348,7 @@ class PrePairMarker(Marker):
             q_i = 0
             for pos, token in enumerate(self.q):
                 self.query_terms.append(token.text)
-                if not (token.is_punct or token.is_stop or (token in stopwords)):
+                if not (token.is_punct or token.is_stop or (token.text.lower() in stopwords)):
                     stem = self.stem(token.text.lower())
                     if stem in self.stem_to_id :
                         i = self.stem_to_id[stem]
@@ -362,7 +362,7 @@ class PrePairMarker(Marker):
         marked_doc = []      
         for i,term in enumerate(d):
             marked_doc.append(term.text)
-            if not (term.is_punct or term.is_stop or (term in stopwords)):
+            if not (term.is_punct or term.is_stop or (term.text.lower() in stopwords)):
                 stem = self.stem(term.text.lower())
                 for q_stem in self.stem_to_id:
                     if q_stem == stem:
@@ -390,7 +390,7 @@ class PrePairMarker(Marker):
             q_i = 0
             for pos, token in enumerate(self.q):
                 self.query_terms.append(token.text)
-                if not (token.is_punct or token.is_stop or (token in stopwords)):
+                if not (token.is_punct or token.is_stop or (token.text.lower() in stopwords)):
                     stem = self.stem(token.text.lower())
                     if stem in self.stem_to_id :
                         i = self.stem_to_id[stem]
@@ -407,7 +407,7 @@ class PrePairMarker(Marker):
             self.mark_stem = set()
             for i,term in enumerate(self.t):
                 self.title_terms.append(term.text)
-                if not (term.is_punct or term.is_stop or (term in stopwords)):
+                if not (term.is_punct or term.is_stop or (term.text.lower() in stopwords)):
                     stem = self.stem(term.text.lower())
                     for q_stem in self.stem_to_id:
                         if q_stem == stem:
@@ -420,7 +420,7 @@ class PrePairMarker(Marker):
         marked_doc = []      
         for i,term in enumerate(d):
             marked_doc.append(term.text)
-            if not (term.is_punct or term.is_stop or (term in stopwords)):
+            if not (term.is_punct or term.is_stop or (term.text.lower() in stopwords)):
                 stem = self.stem(term.text.lower())
                 for q_stem in self.stem_to_id:
                     if q_stem == stem:
@@ -453,7 +453,7 @@ class PercentagePrePairMarker(PrePairMarker):
             q_i = 0
             for pos, token in enumerate(self.q):
                     self.query_terms.append(token.text)
-                    if not (token.is_punct or token.is_stop or (token in stopwords)):
+                    if not (token.is_punct or token.is_stop or (token.text.lower() in stopwords)):
                         stem = self.stem(token.text.lower())
                         if stem in self.stem_to_id :
                             i = self.stem_to_id[stem]
@@ -467,7 +467,7 @@ class PercentagePrePairMarker(PrePairMarker):
         mark_id_pos = dict()    
         for i,term in enumerate(d):
             doc_terms.append(term.text)
-            if not (term.is_punct or term.is_stop or (term in stopwords)):
+            if not (term.is_punct or term.is_stop or (term.text.lower() in stopwords)):
                 stem = self.stem(term.text.lower())
                 for q_stem in self.stem_to_id:
                     if q_stem == stem:

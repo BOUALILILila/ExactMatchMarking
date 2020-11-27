@@ -1,4 +1,5 @@
 import collections
+import random
 import os , time
 import re, sys
 from bs4 import BeautifulSoup
