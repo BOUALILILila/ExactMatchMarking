@@ -240,7 +240,8 @@ class PassageProcessor(DataProcessor):
                 did, pass_pos = pid.split('_passage-')
                 prev_did = prev_record[1]
 
-                if did != prev_did or qid != prev_record[0]:
+                #if did != prev_did or qid != prev_record[0]:
+                if pass_pos == '0': # tests are in test_code dir .ipynb
                     q, all_pass = marker.mark(prev_record[2], all_pass)
                     passages = all_pass.split(SEP)
                     i_ids = self.handle.write_eval_example(tf_writer, tokenizer,

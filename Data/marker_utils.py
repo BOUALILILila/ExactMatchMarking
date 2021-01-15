@@ -338,10 +338,6 @@ class PrePairMarker(Marker):
         return copy.deepcopy(self.query_terms)
     
     def _mark(self, query, doc):
-        if len(doc)>2100000:
-            print('=======')
-            print(doc)
-            print('=======')
         d = self.nlp(doc)
         if query != self.query:
             self.query = query

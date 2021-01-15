@@ -33,6 +33,9 @@ def clean_text(text):
     
     #
     text = re.sub("’","'",text)
+    # clean body text: remove "-------" and "       "
+    text = re.sub(r'----*', '---', text)
+    text = re.sub(r'  *', ' ', text)
     #empty characters
     text = " ".join(text.strip().split())
 
