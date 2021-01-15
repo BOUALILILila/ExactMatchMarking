@@ -1,10 +1,12 @@
 
 import os
+os.environ['PATH']=os.environ['PATH']+':/logiciels/jdk-13.0.1/bin'
+
 import pyserini
 from pyserini.search import SimpleSearcher
 from .utils import *
 
-os.environ['PATH']=os.environ['PATH']+':/logiciels/jdk-13.0.1/bin'
+
 
 def get_content_from_run_ids(
     run_path, col,
