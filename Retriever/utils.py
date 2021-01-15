@@ -4,6 +4,7 @@ import re
 import os
 import ssl
 from importlib import reload
+import collections
 
 reload(sys)
 
@@ -74,6 +75,17 @@ def get_relevant_docids(fqrel):
                     qid2docid[qid] = set()
                 qid2docid[qid].add(docid)
     return qid2docid
+
+def load_qrels(fqrel):
+    qrels = collections.OrderedDict()
+    with open(fqrel) as f:
+        for line in f:
+            qid, _, docid, label = line.replace('\n', '').strip().split()
+            if qid in qrels:
+                qrels[qid].update({docid:label})
+            else:
+                qrels[qid] = {docid:label} 
+    return qrels
 
 
 
