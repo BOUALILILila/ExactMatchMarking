@@ -7,6 +7,7 @@ import jnius_config
 import glob
 from io import open
 
+os.environ['PATH']=os.environ['PATH']+':/logiciels/jdk-13.0.1/bin'
 
 #anserini version 0.9.4
 

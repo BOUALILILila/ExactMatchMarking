@@ -4,7 +4,6 @@ from argparse import ArgumentParser
 from Retriever import get_content_from_run_ids
 from Data import get_available_collections, get_collection
 
-os.environ['PATH']=os.environ['PATH']+':/logiciels/jdk-13.0.1/bin'
 
 #python "data/data/Repositories/MarkedBERT/first_stage/retrieve.py" 
 # --collection core18  --data_path data/data/datasets 
