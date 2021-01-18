@@ -10,7 +10,7 @@ import copy
 
 from .udel_stop_words import stopwords
 
-STRATEGIES = ('sim_doc', 'sim_pair', 'pre_pass', 'pre_pair', 'base', 'percentage')
+STRATEGIES = ('sim_doc', 'sim_pair', 'pre_doc', 'pre_pair', 'base', 'percentage')
 
 def get_marker(strategy):
     strategy = strategy.lower()
@@ -20,8 +20,8 @@ def get_marker(strategy):
         return SimDocMarker()
     if strategy == 'sim_pair':
         return SimPairMarker()
-    if strategy == 'pre_pass':
-        return PrePassMarker()
+    if strategy == 'pre_doc':
+        return PreDocMarker()
     if strategy == 'pre_pair':
         return PrePairMarker()
     if strategy == 'base':
@@ -241,9 +241,9 @@ class SimPairMarker(Marker):
         doc = Doc(self.nlp.vocab, words=marked_doc, spaces=[token.whitespace_ for token in d])
         return ''.join(token.text_with_ws for token in qu), ''.join(token.text_with_ws for token in title), ''.join(token.text_with_ws for token in doc)
 
-class PrePassMarker(Marker):
+class PreDocMarker(Marker):
     def __init__(self, stem=None):
-        super(PrePassMarker, self).__init__(stem)
+        super(PreDocMarker, self).__init__(stem)
         self.query = ''
         self.stem_to_id = dict()
         self.title = None

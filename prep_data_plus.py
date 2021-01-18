@@ -11,6 +11,7 @@ def main():
 
     parser.add_argument('--collection', type=str, required=True, help=f'{get_available_collections()}')
     parser.add_argument('--set', type=str, default='test')
+    parser.add_argument('--fold', type=int, default=0)
     parser.add_argument('--output_dir', type=str, required=True)
     parser.add_argument('--queries_path', type=str, required=False,
                             help='The path to the test queries .tsv file: q_id, query')
@@ -18,10 +19,14 @@ def main():
                             help='The path to the run file .tsv file : q_id, doc_id, score, rank, judgement.')
     parser.add_argument('--collection_path', type=str, required=False,
                             help='The path to the documents .tsv file: doc_id, title, body.')
+    parser.add_argument('--folds_file_path', type=str, required=False,
+                            help='The path to the folds json file')
     parser.add_argument('--set_name', type=str, required=True,
                             help='Name of the experiment.')
-    parser.add_argument('--num_eval_docs', default=1000, type=int,
+    parser.add_argument('--num_eval_docs_perquery', default=1000, type=int,
                             help='The number of documents retrieved per query.')
+    parser.add_argument('--num_train_docs_perquery', default=1000, type=int,
+                            help='The number of documents to include in the train set (cross validation).')
     
     parser.add_argument('--dataset_path', type=str, required=False)
     parser.add_argument('--do_udel', action='store_true', default=False)
@@ -50,6 +55,9 @@ def main():
     else:
         prep = col.get_prep()
     
+    if fold>0:
+        prep.create_kfold_cross_validation_data(args)
+
     if args.set in ('test', 'dev'):
         stats = prep.convert_eval_dataset(args)
     elif args.set == 'train':

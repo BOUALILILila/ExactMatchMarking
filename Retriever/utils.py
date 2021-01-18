@@ -2,18 +2,18 @@
 import sys
 import re
 import os
-import ssl
-from importlib import reload
+# import ssl
+# from importlib import reload
 import collections
 
-reload(sys)
+# reload(sys)
 
-try:
-    _create_unverified_https_context = ssl._create_unverified_context
-except AttributeError:
-    pass
-else:
-    ssl._create_default_https_context = _create_unverified_https_context
+# try:
+#     _create_unverified_https_context = ssl._create_unverified_context
+# except AttributeError:
+#     pass
+# else:
+#     ssl._create_default_https_context = _create_unverified_https_context
 
 
 

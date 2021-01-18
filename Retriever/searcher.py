@@ -7,11 +7,22 @@ import jnius_config
 import glob
 from io import open
 
-os.environ['PATH']=os.environ['PATH']+':/logiciels/jdk-13.0.1/bin'
 
 #anserini version 0.9.4
 
-class Searcher:
+import threading
+class ThreadSafeSingleton(type):
+    _instances = {}
+    _singleton_lock = threading.Lock()
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            with cls._singleton_lock:
+                if cls not in cls._instances:
+                    cls._instances[cls] = super(ThreadSafeSingleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+class Searcher(metaclass=ThreadSafeSingleton):
     def __init__(self, anserini_path):
         paths = glob.glob(os.path.join(anserini_path, 'target', 'anserini-*-fatjar.jar'))
         if not paths:

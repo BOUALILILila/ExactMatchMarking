@@ -127,6 +127,10 @@ class TopKPrepFromRetriever(DataPrep):
                 if qrels:
                     relevant_doc_ids = qrels[query_id]
                 data[query_id] = (query, relevant_doc_ids, candidate_doc_ids)
+                relevant_docs_whithin_candidates = relevant_doc_ids.intersection(set(candidate_doc_ids))
+                if len(relevant_docs_whithin_candidates)<5:
+                    print(f'[WARN] : topic {query_id} > has less than 5 relevant documents. \
+                     Only {len(relevant_docs_whithin_candidates)} were retrieved by BM25 from all {len(relevant_doc_ids)} assessed.')
         return data
     
     def _convert_dataset(
@@ -176,7 +180,7 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
         if self.split:
             collection = self._split_docs(collection)
         print('Saving Data File...')
-        self._convert_dataset(data, collection, args.set_name, args.num_eval_docs, args.output_dir)
+        self._convert_dataset(data, collection, args.set_name, args.num_eval_docs_perquery, args.output_dir)
 
         print('Done!')
         return self.stats
@@ -303,6 +307,90 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
 
         return sorted_run, qrels
 
+    def create_kfold_cross_validation_data(
+        self,
+        args
+    ):
+        print('Begin...')
+        if not os.path.exists(args.output_dir):
+                os.mkdir(args.output_dir)
+
+        queries = self._load_queries(path=args.queries_path)
+        print('Loading Run entries...')
+        run, qrels = self._load_run(path=args.run_path)
+        data = self._merge(qrels=qrels, run=run, queries=queries)
+
+        print('Loading Collection...')
+        collection = self._load_collection(args.collection_path)
+        if self.split:
+            collection = self._split_docs(collection)
+
+        print('K fold splitting...')
+        with open(args.folds_file_path) as f:
+            folds_qid = json.load(f)
+        
+        folds_qid = collections.deque(folds_qid)
+        rotate = args.fold - 1
+        map(folds_qid.rotate(rotate), folds_qid)
+
+        train_qids, test_qids = folds_qid[0] + folds_qid[1] + folds_qid[2] + folds_qid[3], folds_qid[4]
+        train_qids, test_qids = sorted(train_qids), sorted(test_qids)
+
+        # test fold
+        print('Creating test fold data...')
+        test_data = data[qid for qid in test_qids]
+        self._convert_dataset(test_data, collection, f'test_{args.set_name}', args.num_eval_docs_perquery, args.output_dir)
+        
+        # train fold 
+        print('Creating train fold data...')
+        train_data = data[qid for qid in train_qids]
+        self._convert_train_dataset(train_data, collection, f'train_{args.set_name}', args.num_train_docs_perquery, args.output_dir)
+        
+        print('Done!')
+        return self.stats    
+
+    def _convert_train_dataset(
+        self,
+        data, 
+        collection, 
+        set_name, 
+        num_train_docs, 
+        output_dir
+        ):
+
+        suff = 'passages' if self.split else 'doc'
+        output_path = os.path.join(output_dir, f'run_{set_name}_{suff}.tsv')
+        start_time = time.time()
+
+        with open(output_path, 'w') as doc_writer:
+            for idx, query_id in enumerate(data):
+                    query, qrels, doc_titles = data[query_id]
+
+                    clean_query = clean_text(query)
+
+                    doc_titles = doc_titles[:num_train_docs]
+
+                    labels = [
+                        1 if doc_title in qrels else 0 
+                        for doc_title in doc_titles
+                    ]
+
+                    for label, doc_title in zip(labels, doc_titles):
+                        if self.split :
+                            passages = collection[doc_title]
+                            self.stats[doc_title] = len(passages)
+                            for pos, p in passages.items():
+                                doc_writer.write("\t".join((clean_query, p, str(label)))+ "\n")
+                        else: 
+                            title, doc = collection[doc_title]
+                            doc_writer.write("\t".join((clean_query, title, clean_doc, str(label))) + "\n")
+
+                    if idx % 10 == 0:
+                        print(f'Wrote {idx} of {len(data)} queries')
+                        time_passed = time.time() - start_time
+                        est_hours = (len(data) - idx) * time_passed / (max(1.0, idx) * 3600)
+                        print(f'Estimated total hours to save: {est_hours}')
+
 
 class MsMarcoPassagePrep(TopKPrepFromRetriever):
 
@@ -324,7 +412,7 @@ class MsMarcoPassagePrep(TopKPrepFromRetriever):
 
         print('Converting to TFRecord...')
         self._convert_dataset(data,collection, args.set_name,
-                            args.num_eval_docs, args.output_dir)
+                            args.num_eval_docs_perquery, args.output_dir)
 
         print('Done!')
 
@@ -360,8 +448,7 @@ class MsMarcoPassagePrep(TopKPrepFromRetriever):
                     len_gt_query = len(qrels)
 
                     for label, doc_title in zip(labels, doc_titles):
-                        _doc = strip_html_xml_tags(collection[doc_title])
-                        clean_doc = clean_text(_doc)
+                        clean_doc = collection[doc_title]
 
                         writer.write("\t".join((query_id, doc_title, clean_query, clean_doc, str(label), str(len_gt_query))) + "\n")
 
