@@ -148,6 +148,7 @@ class CustomTFTrainer:
 
     def get_optimizers(
         self,
+        num_train_steps: int,
     ) -> Tuple[tf.keras.optimizers.Optimizer, tf.keras.optimizers.schedules.LearningRateSchedule]:
         """
         Setup the optimizer and the learning rate scheduler.
@@ -159,9 +160,12 @@ class CustomTFTrainer:
         if self.optimizers is not None:
             return self.optimizers
 
+        if (self.args.warmup_steps is None or self.args.warmup_steps ==0) and self.args.warmup_prop>0.0 :
+            self.args.warmup_steps = int(num_train_steps * self.args.warmup_prop)
+
         optimizer, scheduler = create_optimizer(
             self.args.learning_rate,
-            self.train_steps,
+            num_train_steps,
             self.args.warmup_steps,
             adam_epsilon=self.args.adam_epsilon,
             weight_decay_rate=self.args.weight_decay,
@@ -378,7 +382,7 @@ class CustomTFTrainer:
         epochs = float(epochs)
 
         with self.strategy.scope():
-            self.get_optimizers()
+            self.get_optimizers(t_total)
             iterator = iter(train_ds)
             ckpt = tf.train.Checkpoint(optimizer = self.optimizer, model = self.model, iterator = iterator)
             self.model.ckpt_manager = tf.train.CheckpointManager(ckpt,
@@ -425,7 +429,7 @@ class CustomTFTrainer:
         logger.info("***** Running training *****")
         logger.info("  Num examples = %d", self.num_train_examples)
         logger.info("  Num Epochs = %d", epochs)
-        logger.info("  Total optimization steps = %d", self.train_steps)
+        logger.info("  Total optimization steps = %d", t_total)
 
         for epoch in range(epochs_trained, int(epochs)):
             logger.info("Starting Epoch {} ...".format(epoch+1))

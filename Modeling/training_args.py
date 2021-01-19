@@ -12,6 +12,8 @@ logger.set_verbosity(logger.INFO)
 @dataclass
 class CustomTFTrainingArguments(TFTrainingArguments):
 
+    warmup_prop: Optional[float] = field(default=0.0, metadata={"help": "Linear warmup porportion of total training steps."})
+
     patience: Optional[int] = field(
         default=20, metadata={"help": "Patience for early stopping."},
     )
