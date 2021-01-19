@@ -4,6 +4,7 @@ import os , time
 import re, sys
 from bs4 import BeautifulSoup
 import functools
+import json
 
 
 from .convert_to_udel import UdelConverter
@@ -110,7 +111,7 @@ class TopKPrepFromRetriever(DataPrep):
                     # clean_title = clean_text(title)
 
                     collection[doc_id] = (doc_title, doc_body)
-                    if i % 10000 == 0:
+                    if i % 1000 == 0:
                         print(f'Loading collection, doc {i}')
         return collection
     
@@ -338,12 +339,12 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
 
         # test fold
         print('Creating test fold data...')
-        test_data = data[qid for qid in test_qids]
+        test_data = { qid: data[qid] for qid in test_qids if qid in data }
         self._convert_dataset(test_data, collection, f'test_{args.set_name}', args.num_eval_docs_perquery, args.output_dir)
         
         # train fold 
         print('Creating train fold data...')
-        train_data = data[qid for qid in train_qids]
+        train_data = { qid: data[qid] for qid in train_qids if qid in data }
         self._convert_train_dataset(train_data, collection, f'train_{args.set_name}', args.num_train_docs_perquery, args.output_dir)
         
         print('Done!')
@@ -380,7 +381,7 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
                             passages = collection[doc_title]
                             self.stats[doc_title] = len(passages)
                             for pos, p in passages.items():
-                                doc_writer.write("\t".join((clean_query, p, str(label)))+ "\n")
+                                doc_writer.write("\t".join(( clean_query, p, str(label)))+ "\n")
                         else: 
                             title, doc = collection[doc_title]
                             doc_writer.write("\t".join((clean_query, title, clean_doc, str(label))) + "\n")

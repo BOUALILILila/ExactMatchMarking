@@ -105,7 +105,7 @@ class PassageProcessor(DataProcessor):
         super().__init__(handle)
 
     def get_train_dataset (self, data_path: str, batch_size: int, seed: int = 42):
-        return self.handle.get_train_dataset(data_path, batch_size)
+        return self.handle.get_train_dataset(data_path, batch_size, seed)
     
     def get_eval_dataset (self, data_path: str, batch_size: int, num_skip: int = 0):
         return self.handle.get_eval_dataset(data_path, batch_size, num_skip)
@@ -118,8 +118,8 @@ class PassageProcessor(DataProcessor):
                         output_dir: str,
                         set_name: str,
     ):
-        tf_writer = tf.io.TFRecordWriter(f"{output_dir}/dataset_{set_name}_train.tf")
-        tsv_writer = open(f"{output_dir}/pairs_{set_name}_train.tsv", 'w')
+        tf_writer = tf.io.TFRecordWriter(f"{output_dir}/dataset_{set_name}.tf")
+        tsv_writer = open(f"{output_dir}/pairs_{set_name}.tsv", 'w')
 
         start_time = time.time()
 

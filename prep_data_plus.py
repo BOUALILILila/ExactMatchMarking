@@ -55,18 +55,18 @@ def main():
     else:
         prep = col.get_prep()
     
-    if fold>0:
-        prep.create_kfold_cross_validation_data(args)
-
-    if args.set in ('test', 'dev'):
+    if args.fold>0:
+        stats = prep.create_kfold_cross_validation_data(args)
+    elif args.set in ('test', 'dev'):
         stats = prep.convert_eval_dataset(args)
     elif args.set == 'train':
         prep.convert_train_dataset(args)
     else :
         raise ValueError("Set must be in ['train', 'dev', 'test] !")
-
-    with open(os.path.join(args.output_dir,f'prep_stats_{args.set_name}.json'), 'w') as fp:
-        json.dump(stats, fp)
+    
+    if stats :
+        with open(os.path.join(args.output_dir,f'prep_stats_{args.set_name}.json'), 'w') as fp:
+            json.dump(stats, fp)
 
 
 if __name__ == '__main__':

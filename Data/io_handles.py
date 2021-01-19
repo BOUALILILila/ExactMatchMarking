@@ -101,7 +101,7 @@ class PassageHandle(TFRecordHandle):
         dataset = dataset.map( lambda record : self._extract_fn_train(record)).prefetch(batch_size*1000)
         count = dataset.reduce(0, lambda x, _: x + 1)
         dataset = dataset.repeat()
-        dataset = dataset.shuffle(buffer_size=1000, seed=self.seed)
+        dataset = dataset.shuffle(buffer_size=1000, seed=seed)
         dataset = dataset.padded_batch(
                     batch_size=batch_size,
                     padded_shapes=({
@@ -650,7 +650,7 @@ class DocumentSplitterHandle(DocumentHandle):
         dataset = dataset.map( lambda record : self._extract_fn_train(record)).prefetch(batch_size*1000)
         count = dataset.reduce(0, lambda x, _: x + 1)
         dataset = dataset.repeat()
-        dataset = dataset.shuffle(buffer_size=1000, seed=self.seed)
+        dataset = dataset.shuffle(buffer_size=1000, seed=seed)
         dataset = dataset.padded_batch(
                     batch_size=batch_size,
                     padded_shapes=({

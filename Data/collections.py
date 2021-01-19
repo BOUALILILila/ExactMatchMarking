@@ -12,7 +12,7 @@ from .data_processors import PassageProcessor, DocumentProcessor, DataProcessor
 def get_available_collections():
     return list(COLLECTIONS.keys())
 
-def get_collection(collection_name, how='tokens'):
+def get_collection(collection_name, how='words'):
     collection = collection_name.lower()
     if collection in COLLECTIONS.keys():
         return COLLECTIONS[collection](how)
