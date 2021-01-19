@@ -91,10 +91,14 @@ class CustomTFTrainer:
         if self.train_dataset is None:
             raise ValueError("Trainer: training requires a train_dataset.")
 
-        if self.args.max_steps > 0:
-            self.train_steps = self.args.max_steps
-        else:
-            self.train_steps: int = math.ceil(self.num_train_examples / self.args.train_batch_size)
+        self.total_train_batch_size = self.args.train_batch_size * self.args.gradient_accumulation_steps
+
+        if self.num_train_examples < 0:
+            raise ValueError("The training dataset must have an asserted cardinality")
+        # if self.args.max_steps > 0:
+        #     self.train_steps = self.args.max_steps
+        # else:
+        #     self.train_steps: int = math.ceil(self.num_train_examples / self.args.train_batch_size) # math.floor because drop last batch
 
         return self.strategy.experimental_distribute_dataset(self.train_dataset)
 
@@ -309,13 +313,13 @@ class CustomTFTrainer:
 
         preds_file.close()
 
-        df = preds_with_ids.sort_values(by=['qid','did','logits_1'], ascending=[True,True,False])
-        df['pred_max']=df.groupby(['qid','did'], sort=False)['logits_1'].transform(max)
-        df= df.drop_duplicates(['qid','did'], keep='first')
-        df = df.sort_values(by=['qid','pred_max'], ascending=[True, False])
         
         metrics ={}
         if not prediction_loss_only:
+            df = preds_with_ids.sort_values(by=['qid','did','logits_1'], ascending=[True,True,False])
+            df['pred_max']=df.groupby(['qid','did'], sort=False)['logits_1'].transform(max)
+            df= df.drop_duplicates(['qid','did'], keep='first')
+            df = df.sort_values(by=['qid','pred_max'], ascending=[True, False])
             df_preds_rel = pd.merge(df, eval_qrels, on=['qid','did'], how ='left')
             df_preds_rel['label'] = df_preds_rel['label'].fillna(0)
 
@@ -347,14 +351,43 @@ class CustomTFTrainer:
 
         self.gradient_accumulator.reset()
 
+        # here actualy the concept of epoch does not really affect the computation
+        # It s the same when using max_steps = (num_train_examples / batch_size)*epochs with epochs=1
+        # plus the iterator is saved so we restor at the right batch 
+
+        num_update_steps_per_epoch = self.num_train_examples / self.total_train_batch_size
+
+        # here we drop the last incomplete batch so we use math.floor instead of ceil
+        approx = math.floor 
+        num_update_steps_per_epoch = approx(num_update_steps_per_epoch)
+
+        # At least one update for each epoch.
+        num_update_steps_per_epoch = max(num_update_steps_per_epoch, 1)
+        self.steps_per_epoch = num_update_steps_per_epoch
+
+        if self.args.max_steps > 0:
+            t_total = self.args.max_steps
+            epochs = (self.args.max_steps // self.steps_per_epoch) + int(
+                self.args.max_steps % self.steps_per_epoch > 0
+            )
+        else:
+            t_total = self.steps_per_epoch * self.args.num_train_epochs
+            epochs = self.args.num_train_epochs
+
+        # Since ``self.args.num_train_epochs`` can be `float`, make ``epochs`` be a `float` always.
+        epochs = float(epochs)
+
         with self.strategy.scope():
             self.get_optimizers()
-            iterations = self.optimizer.iterations
             iterator = iter(train_ds)
             ckpt = tf.train.Checkpoint(optimizer = self.optimizer, model = self.model, iterator = iterator)
             self.model.ckpt_manager = tf.train.CheckpointManager(ckpt,
                                                                  os.path.join(self.args.output_dir,f'tf_ckpt_{self.args.ckpt_name}'),
                                                                  max_to_keep=self.args.max_ckpt_keep) 
+            
+            iterations = self.optimizer.iterations
+            epochs_trained = 0
+            steps_trained_in_current_epoch = 0
 
             if self.model.ckpt_manager.latest_checkpoint:
                 logger.info(
@@ -363,15 +396,18 @@ class CustomTFTrainer:
 
                 ckpt.restore(self.model.ckpt_manager.latest_checkpoint).expect_partial()
 
-        if iterations.numpy() > 0:
-            logger.info("Start the training from the last checkpoint")
-            start_epoch = (iterations.numpy() // self.train_steps) + 1
-        else:
-            start_epoch = 1
+                step = iterations.numpy()
+
+                epochs_trained = step // self.steps_per_epoch
+                steps_trained_in_current_epoch = step % self.steps_per_epoch
+
+                logger.info("  Continuing training from checkpoint, will skip to saved global_step")
+                logger.info("  Continuing training from epoch %d", epochs_trained)
+                logger.info("  Continuing training from global step %d", step)
+                logger.info("  Will skip the first %d steps in the first epoch", steps_trained_in_current_epoch)
+
 
         tf.summary.experimental.set_step(iterations)
-
-        epochs = 1 if self.args.max_steps > 0 else self.args.num_train_epochs
 
         if self.args.fp16:
             policy = tf.keras.mixed_precision.experimental.Policy("mixed_float16")
@@ -391,7 +427,8 @@ class CustomTFTrainer:
         logger.info("  Num Epochs = %d", epochs)
         logger.info("  Total optimization steps = %d", self.train_steps)
 
-        for epoch in range(start_epoch, int(epochs + 1)):
+        for epoch in range(epochs_trained, int(epochs)):
+            logger.info("Starting Epoch {} ...".format(epoch+1))
             for training_loss in self._training_steps(iterator): # do train on batch, apply gradients return loss
                 step = iterations.numpy()
                 if self.args.debug:
@@ -435,12 +472,19 @@ class CustomTFTrainer:
                         # 2: save transformer ckpt
                         save_chkpt_dir = os.path.join(self.args.ckpt_dir, f"checkpoint-{step}")
                         self.save_model(save_chkpt_dir)
-                        
-
-                if step % self.train_steps == 0 :
-                    break
+                
                 if self.args.do_early_stopping and early_stopping.early_stop:
+                    break      
+
+                if self.args.max_steps > 0 and step >= t_total :
                     break
+
+                if step % self.steps_per_epoch == 0:
+                    break
+            
+            if self.args.max_steps > 0 and step >= self.args.max_steps:
+                break
+                
 
     def _training_steps(self, iterator):
         """

@@ -99,6 +99,7 @@ class PassageHandle(TFRecordHandle):
     def get_train_dataset (self, data_path, batch_size, seed = 42):
         dataset = tf.data.TFRecordDataset([data_path])
         dataset = dataset.map( lambda record : self._extract_fn_train(record)).prefetch(batch_size*1000)
+        # count = dataset.cardinality()
         count = dataset.reduce(0, lambda x, _: x + 1)
         dataset = dataset.repeat()
         dataset = dataset.shuffle(buffer_size=1000, seed=seed)
