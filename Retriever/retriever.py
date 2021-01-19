@@ -37,6 +37,7 @@ def retrieve(col, args):
     print(f'Retriever: \n\tK depth: {args.K}\n\tRM3: {args.rm3}')
     start_time = time.time()
 
+
     if collection == 'robust04':
         with open(os.path.join(data_path, 'folds', collection + '-folds.json')) as f:
             folds = json.load(f)
@@ -46,18 +47,11 @@ def retrieve(col, args):
         #           "0.9 0.5 47 9 0.30",
         #           "0.9 0.5 47 9 0.30",
         #           "0.9 0.5 26 8 0.30"]
-        params = ["0.9 0.4 10 10 0.50",
-                  "0.9 0.4 10 10 0.50",
-                  "0.9 0.4 10 10 0.50",
-                  "0.9 0.4 10 10 0.50",
-                  "0.9 0.4 10 10 0.50"]
         folder_idx = 1
         for topics, param in zip(folds, params):
             # Extract each parameter
-            k1, b, fb_terms, fb_docs, original_query_weight = map(float, param.strip().split())
-            searcher = docsearch.build_searcher(k1=k1, b=b, fb_terms=fb_terms,
-                                                fb_docs=fb_docs, original_query_weight=original_query_weight,
-                                                index_path=index_path, rm3=args.rm3)
+            #k1, b, fb_terms, fb_docs, original_query_weight = map(float, param.strip().split())
+            searcher = docsearch.build_searcher(k1=args.bm25_k1, b=args.bm25_b, index_path=index_path, rm3=args.rm3)
             docsearch.search_document(searcher, qid2docid, qid2text, test_qids,
                                       output_fn + str(folder_idx), args.topic_field,
                                       args.use_doc_title,
@@ -83,7 +77,7 @@ def retrieve(col, args):
     
     # Core collections
     else:
-        searcher = docsearch.build_searcher(k1=0.9, b=0.4, index_path=index_path, rm3=args.rm3)
+        searcher = docsearch.build_searcher(k1=args.bm25_k1, b=args.bm25_b, index_path=index_path, rm3=args.rm3)
         docsearch.search_document(searcher, qid2docid, qid2text, test_qids, output_fn,
                                  args.topic_field, args.use_doc_title, col, K=args.K)
                                  
