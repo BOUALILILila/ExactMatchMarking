@@ -5,8 +5,9 @@ import argparse
 import os
 import pytrec_eval
 
-from Eval import trec_eval
-from Data import get_collection_names
+import tensorflow as tf
+from sklearn.preprocessing import MinMaxScaler
+
 
 def main():
     
@@ -42,8 +43,27 @@ def main():
     dfrun_A = pd.read_csv(args.doc_scores_path, sep = '\t', header=None, dtype={0:str, 1:str})
     dfrun_A.columns = ['qid','did','score','pos','rel']
         
+    # maxP
     dfrun_B = pd.read_csv(args.preds_path, sep = '\t', header=None, dtype={0:str, 1:str})
     dfrun_B.columns = ['qid','did','score']
+    
+    # # all
+    # dfrun_B = pd.read_csv(args.preds_path, sep = '\t', header=None, dtype={0:str, 1:str})
+    # dfrun_B.columns = ['qid','did','pass','logit_0','logit_1']
+    # dfrun_B = dfrun_B.sort_values(by=['qid','did','logits_1'], ascending=[True,True,False])
+    # dfrun_B = dfrun_B.drop_duplicates(['qid','did'], keep='first')
+    # logits = dfrun_B[['logit_0','logit_1']].values
+    # #logsoftmax
+    # dfrun_B['score'] = tf.nn.log_softmax(logits)[:,1].numpy()
+
+    # #probabilitites softmax [0,1]
+    # dfrun_B['score'] = tf.nn.softmax(logits)[:,1].numpy()
+    # ## min-max norm to bm25 scores [0,1]
+    # scores = dfrun_A['score'].to_numpy().reshape(-1,1)
+    # scaler = MinMaxScaler()
+    # scaler.fit(scores)
+    # dfrun_A['score'] = scaler.transform(scores)
+    
         
     dfrun = pd.merge(dfrun_A, dfrun_B, on=['qid','did'])
 
@@ -53,8 +73,8 @@ def main():
         dftrain = dfrun[~dfrun['qid'].isin(folds[itest])]
         dftest[itest] = dfrun[dfrun['qid'].isin(folds[itest])]
         dftest[itest] = dftest[itest].copy()
-        foldqrel = {str(k):{x[1]:x[2] for x in v.values} for k, v in dftrain[['qid','did','rel']].groupby('qid')}
-        #foldqrel = {k:qrel[k] for k in dftrain.qid.values if k in qrel}
+        #foldqrel = {str(k):{x[1]:x[2] for x in v.values} for k, v in dftrain[['qid','did','rel']].groupby('qid')}
+        foldqrel = {k:qrel[k] for k in dftrain.qid.values if k in qrel}
         foldevaluator = pytrec_eval.RelevanceEvaluator(foldqrel, {'map'})
         allcomb = [] 
         for di in np.arange(0.1,1.0,0.1):
@@ -69,7 +89,7 @@ def main():
         print("\tAlpha",np.around(list(np.arange(0.1,1.0,0.1))[bestcomb],1))
         dftest[itest]['predict_merge'] = allcomb[bestcomb][1]
     dfAlphaComb = pd.concat([df for df in dftest])[['qid','did','predict_merge']]
-    dfAlphaComb.to_csv(filename, sep='\t', index_col=None, header=None)
+    dfAlphaComb.to_csv(filename, sep='\t', index=None, header=None)
     
 if __name__ == '__main__':
     main()

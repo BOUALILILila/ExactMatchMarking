@@ -44,10 +44,11 @@ def main():
 
     parser.add_argument('--metrics', type=str, default='map ndcg_cut_20 P.20', 
                             help='Trec Eval metrics e.g. map, ndcg_cut, P. space separated if multiple')
-    parser.add_argument('--per_query', type=bool, default=False, 
+    parser.add_argument('--per_query', action='store_true', default=False,
                             help='Get the metrics per query.')
 
-
+    # baselines paths separated by , 
+    
     args, other = parser.parse_known_args()
 
     metrics = set(args.metrics.split())
@@ -64,6 +65,11 @@ def main():
     for metric in results.columns:
         print(f'> {metric} = {np.around(np.average(results[metric]),4)}')
 
+    # results for each baseline
+    # sort the results per query id  !! important !!
+    # for each metric
+    # ttest_rel(run[metric], baseline[metric])
+    
     
 if __name__ == '__main__':
     main()
