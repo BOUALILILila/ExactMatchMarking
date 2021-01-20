@@ -27,8 +27,11 @@ def main():
     parser.add_argument('--rm3', action='store_true', default=False, help='Use RM3')
 
     parser.add_argument('--bm25_k1', type=float, default=0.9, help='BM25 k1 parameter, default 0.9')
-
     parser.add_argument('--bm25_b',  type=float, default=0.4, help='BM25 b parameter, default 0.4')
+
+    parser.add_argument('--rm3_terms',  type=int, default=10, help='RM3 fb_terms parameter, default 10')
+    parser.add_argument('--rm3_docs',  type=int, default=10, help='RM3 fb_docs parameter, default 10')
+    parser.add_argument('--rm3_queryweight',  type=float, default=0.5, help='RM3 original_query_weight parameter, default 0.5')
 
     parser.add_argument('--index_path', default='lucene-index.robust04.pos+docvectors+rawdocs', help='Path to Lucene index')
     args, other = parser.parse_known_args()

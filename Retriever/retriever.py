@@ -41,17 +41,30 @@ def retrieve(col, args):
     if collection == 'robust04':
         with open(os.path.join(data_path, 'folds', collection + '-folds.json')) as f:
             folds = json.load(f)
-        # tuned params
+        
+        folder_idx = 1
+
+        # tuned params from BIRCH (title queries only)
         # params = ["0.9 0.5 47 9 0.30",
         #           "0.9 0.5 47 9 0.30",
         #           "0.9 0.5 47 9 0.30",
         #           "0.9 0.5 47 9 0.30",
         #           "0.9 0.5 26 8 0.30"]
-        folder_idx = 1
-        for topics, param in zip(folds, params):
+        # Use this code if you want to tune params per fold
+        #for topics, param in zip(folds, params):
             # Extract each parameter
             #k1, b, fb_terms, fb_docs, original_query_weight = map(float, param.strip().split())
-            searcher = docsearch.build_searcher(k1=args.bm25_k1, b=args.bm25_b, index_path=index_path, rm3=args.rm3)
+        
+
+        # Here we use the k1 and b params as given in the args (from PARADE k1=1.9 and b=0.6 for description queries)
+        # (the default k1=0.9 and b=0.4 for title queries)
+        for topics in folds:
+            searcher = docsearch.build_searcher(k1=args.bm25_k1, b=args.bm25_b, 
+                                                index_path=index_path,  
+                                                fb_docs=args.rm3_docs, 
+                                                fb_terms=args.rm3_terms,
+                                                original_query_weight=args.rm3_queryweight,
+                                                rm3=args.rm3)
             docsearch.search_document(searcher, qid2docid, qid2text, test_qids,
                                       output_fn + str(folder_idx), args.topic_field,
                                       args.use_doc_title,
@@ -77,7 +90,12 @@ def retrieve(col, args):
     
     # Core collections
     else:
-        searcher = docsearch.build_searcher(k1=args.bm25_k1, b=args.bm25_b, index_path=index_path, rm3=args.rm3)
+        searcher = docsearch.build_searcher(k1=args.bm25_k1, b=args.bm25_b, 
+                                                index_path=index_path,  
+                                                fb_docs=args.rm3_docs, 
+                                                fb_terms=args.rm3_terms,
+                                                original_query_weight=args.rm3_queryweight,
+                                                rm3=args.rm3)
         docsearch.search_document(searcher, qid2docid, qid2text, test_qids, output_fn,
                                  args.topic_field, args.use_doc_title, col, K=args.K)
                                  
