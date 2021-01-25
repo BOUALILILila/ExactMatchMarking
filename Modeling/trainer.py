@@ -349,7 +349,9 @@ class CustomTFTrainer:
         Train method to train the model.
         """
         train_ds = self.get_train_tfdataset()
+        iterator = iter(train_ds)
 
+        
         if self.args.debug:
             tf.summary.trace_on(graph=True, profiler=True)
 
@@ -383,7 +385,6 @@ class CustomTFTrainer:
 
         with self.strategy.scope():
             self.get_optimizers(t_total)
-            iterator = iter(train_ds)
             ckpt = tf.train.Checkpoint(optimizer = self.optimizer, model = self.model, iterator = iterator)
             self.model.ckpt_manager = tf.train.CheckpointManager(ckpt,
                                                                  os.path.join(self.args.output_dir,f'tf_ckpt_{self.args.ckpt_name}'),
