@@ -33,6 +33,15 @@ class CustomTFTrainingArguments(TFTrainingArguments):
     ckpt_dir: Optional[str] = field(
         default=None, metadata={"help": "Saving directory of the transformers checkpoints."}
     )
+    overwrite_ckpt_dir: bool = field(
+        default=False, 
+        metadata={
+            "help": (
+                "Overwrite the content of the ckpt directory."
+                "Use this to continue training if ckpt_dir points to a checkpoint directory."
+            )
+        },
+    )
     max_ckpt_keep: Optional[int] = field(
         default=3, metadata={"help": "Max checkpoints to keep by the checkpoint manager."},
     )
@@ -44,7 +53,24 @@ class CustomTFTrainingArguments(TFTrainingArguments):
     )
     
     def __post_init__(self):
+        """
+        -output_dir is used to save the pred files 
+        -use overwrite_output_dir to overwrite all precedent results (result files)
+        -if ckpt_dir is not defined then use output_dir/ckpt_name to save ckpts
+        -set ckpt_dir to separate the pred files and ckpt save dirs 
+        """
+
         if self.ckpt_dir is None and self.ckpt_name is not None:
             self.ckpt_dir = os.path.join(self.output_dir, f'ckpt_{self.ckpt_name}')
         elif self.ckpt_dir is None and self.ckpt_name is None:
             raise ValueError('TrainingArguments: No checkpoint specified !')
+    
+        if (
+            tf.io.gfile.exists(self.ckpt_dir)
+            and tf.io.gfile.listdir(self.ckpt_dir)
+            and self.do_train
+            and not self.overwrite_ckpt_dir
+        ):
+        raise ValueError(
+            f"TrainingArguments: ({self.ckpt_dir}) already exists and is not empty. Use --overwrite_ckpt_dir to overcome."
+        )
