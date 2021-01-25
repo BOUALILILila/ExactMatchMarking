@@ -87,7 +87,7 @@ class CustomTFTrainer:
         else:
             self.tb_writer = tf.summary.create_file_writer(self.args.logging_dir)
 
-    def get_train_tfdataset(self) -> tf.data.Dataset:
+    def get_train_tfdataset(self) :
         if self.train_dataset is None:
             raise ValueError("Trainer: training requires a train_dataset.")
 
@@ -100,7 +100,7 @@ class CustomTFTrainer:
         # else:
         #     self.train_steps: int = math.ceil(self.num_train_examples / self.args.train_batch_size) # math.floor because drop last batch
 
-        return self.strategy.experimental_distribute_dataset(self.train_dataset)
+        self.train_dataset =  self.strategy.experimental_distribute_dataset(self.train_dataset)
 
     def get_eval_tfdataset(self, eval_dataset: Optional[tf.data.Dataset] = None,
                            num_eval_examples: Optional[int] = None, 
@@ -348,10 +348,8 @@ class CustomTFTrainer:
         """
         Train method to train the model.
         """
-        train_ds = self.get_train_tfdataset()
-        iterator = iter(train_ds)
+        self.get_train_tfdataset()
 
-        
         if self.args.debug:
             tf.summary.trace_on(graph=True, profiler=True)
 
@@ -359,7 +357,6 @@ class CustomTFTrainer:
 
         # here actualy the concept of epoch does not really affect the computation
         # It s the same when using max_steps = (num_train_examples / batch_size)*epochs with epochs=1
-        # plus the iterator is saved so we restor at the right batch 
 
         num_update_steps_per_epoch = self.num_train_examples / self.total_train_batch_size
 
@@ -385,7 +382,7 @@ class CustomTFTrainer:
 
         with self.strategy.scope():
             self.get_optimizers(t_total)
-            ckpt = tf.train.Checkpoint(optimizer = self.optimizer, model = self.model, iterator = iterator)
+            ckpt = tf.train.Checkpoint(optimizer = self.optimizer, model = self.model)
             self.model.ckpt_manager = tf.train.CheckpointManager(ckpt,
                                                                  os.path.join(self.args.output_dir,f'tf_ckpt_{self.args.ckpt_name}'),
                                                                  max_to_keep=self.args.max_ckpt_keep) 
@@ -434,7 +431,7 @@ class CustomTFTrainer:
 
         for epoch in range(epochs_trained, int(epochs)):
             logger.info("Starting Epoch {} ...".format(epoch+1))
-            for training_loss in self._training_steps(iterator): # do train on batch, apply gradients return loss
+            for training_loss in self._training_steps(): # do train on batch, apply gradients return loss
                 step = iterations.numpy()
                 if self.args.debug:
                     with self.tb_writer.as_default():
@@ -491,11 +488,11 @@ class CustomTFTrainer:
                 break
                 
 
-    def _training_steps(self, iterator):
+    def _training_steps(self):
         """
         Returns a generator over training steps (i.e. parameters update).
         """
-        for i, loss in enumerate(self._accumulate_next_gradients(iterator)):
+        for i, loss in enumerate(self._accumulate_next_gradients()):
             if i % self.args.gradient_accumulation_steps == 0:
                 self._apply_gradients()
                 yield loss
@@ -517,8 +514,9 @@ class CustomTFTrainer:
         self.optimizer.apply_gradients(list(zip(gradients, self.model.trainable_variables)))
         self.gradient_accumulator.reset()
 
-    def _accumulate_next_gradients(self, iterator):
+    def _accumulate_next_gradients(self):
         """Accumulates the gradients from the next element in dataset."""
+        iterator = iter(self.train_dataset)
 
         @tf.function
         def _accumulate_next():
