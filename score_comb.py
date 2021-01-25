@@ -47,10 +47,10 @@ def main():
     dfrun_B = pd.read_csv(args.preds_path, sep = '\t', header=None, dtype={0:str, 1:str})
     dfrun_B.columns = ['qid','did','score']
     
-    # # all
+    # all
     # dfrun_B = pd.read_csv(args.preds_path, sep = '\t', header=None, dtype={0:str, 1:str})
     # dfrun_B.columns = ['qid','did','pass','logit_0','logit_1']
-    # dfrun_B = dfrun_B.sort_values(by=['qid','did','logits_1'], ascending=[True,True,False])
+    # dfrun_B = dfrun_B.sort_values(by=['qid','did','logit_1'], ascending=[True,True,False])
     # dfrun_B = dfrun_B.drop_duplicates(['qid','did'], keep='first')
     # logits = dfrun_B[['logit_0','logit_1']].values
     # #logsoftmax
