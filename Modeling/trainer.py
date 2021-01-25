@@ -451,7 +451,7 @@ class CustomTFTrainer:
 
                     logs["learning_rate"] = self.optimizers[1](step).numpy()
 
-                    logger.info("Epoch {} Step {} Validation Metrics {}".format(epoch, step, logs))
+                    logger.info("Epoch {} Step {} Validation Metrics {}".format(epoch+1, step, logs))
 
                     with self.tb_writer.as_default():
                         for k, v in logs.items():
@@ -463,7 +463,7 @@ class CustomTFTrainer:
                         early_stopping(results[f'eval_{repr(self.eval_metric)}'], self.model, step)  ## self.args.eval_metric
 
                 if step % self.args.logging_steps == 0:
-                    logger.info("Epoch {} Step {} Train Loss {:.4f}".format(epoch, step, training_loss.numpy()))
+                    logger.info("Epoch {} Step {} Train Loss {:.4f}".format(epoch+1, step, training_loss.numpy()))
 
                 if step % self.args.save_steps == 0:
                     # 1: save tf trainable ckpt 
@@ -649,8 +649,8 @@ class CustomTFTrainer:
         """
         output_dir = output_dir if output_dir is not None else self.args.ckpt_dir
 
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+        if not tf.io.gfile.exists(output_dir):
+            tf.io.gfile.makedirs(output_dir)
             
         logger.info("Saving model in {}".format(output_dir))
 
