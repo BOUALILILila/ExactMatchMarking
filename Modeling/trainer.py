@@ -520,7 +520,7 @@ class CustomTFTrainer:
 
         @tf.function
         def _accumulate_next():
-            per_replica_features, per_replica_labels = iterator.get_next_as_optional()
+            per_replica_features, per_replica_labels = iterator.get_next()
 
             return self._accumulate_gradients(per_replica_features, per_replica_labels)
 
