@@ -657,7 +657,7 @@ class CustomTFTrainer:
         self.model.save_pretrained(output_dir)
         if gcs:
             ckpt_save_path = self.model.ckpt_manager.save()
-            logger.info("Saving checkpoint for step {} at {}".format(step, ckpt_save_path))
+            logger.info("Saving checkpoint {}".format(ckpt_save_path))
 
     def save_last_tf_chkpt(self, save_dir, ckpt_dir=None):
         with self.strategy.scope():
