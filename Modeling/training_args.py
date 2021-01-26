@@ -71,6 +71,6 @@ class CustomTFTrainingArguments(TFTrainingArguments):
             and self.do_train
             and not self.overwrite_ckpt_dir
         ):
-        raise ValueError(
-            f"TrainingArguments: ({self.ckpt_dir}) already exists and is not empty. Use --overwrite_ckpt_dir to overcome."
-        )
+            raise ValueError(
+                f"TrainingArguments: ({self.ckpt_dir}) already exists and is not empty. Use --overwrite_ckpt_dir to overcome."
+            )
