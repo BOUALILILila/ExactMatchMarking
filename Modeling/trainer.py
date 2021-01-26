@@ -640,7 +640,7 @@ class CustomTFTrainer:
         np.random.seed(self.args.seed)
         tf.random.set_seed(self.args.seed)
 
-    def save_model(self, output_dir: Optional[str] = None):
+    def save_model(self, output_dir: Optional[str] = None, gcs: Optional[bool]=False):
         """
         Will save the model, so you can reload it using :obj:`from_pretrained()`.
         if outout_dir is given it is used to save the model else :
@@ -655,6 +655,9 @@ class CustomTFTrainer:
         logger.info("Saving model in {}".format(output_dir))
 
         self.model.save_pretrained(output_dir)
+        if gcs:
+            ckpt_save_path = self.model.ckpt_manager.save()
+            logger.info("Saving checkpoint for step {} at {}".format(step, ckpt_save_path))
 
     def save_last_tf_chkpt(self, save_dir, ckpt_dir=None):
         with self.strategy.scope():
