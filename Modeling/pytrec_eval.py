@@ -6,7 +6,7 @@ import pytrec_eval
 def trec_eval(preds: pd.DataFrame, qrels: pd.DataFrame, metrics: set):
 
     # read the qrels 
-    qrel = {str(k):{str(x[1]):int(x[2]) for x in v.values} for k, v in qrels[['qid','did','label']].groupby(0)}
+    qrel = {str(k):{str(x[1]):int(x[2]) for x in v.values} for k, v in qrels[['qid','did','label']].groupby('qid')}
     
     # create the evaluator
     evaluator = pytrec_eval.RelevanceEvaluator(qrel, metrics)
