@@ -116,7 +116,7 @@ def main():
                 qrels_file = os.path.join(data_args.eval_data_dir, f'{data_args.eval_qrels_file}.tsv')
                 if tf.io.gfile.exists(qrels_file):
                     eval_qrels = pd.read_csv(qrels_file,
-                                header=None, index_col=None, delimiter='\t', names=['qid','did','label'], 
+                                header=None, index_col=None, delimiter=' ', names=['qid','_','did','rel'], 
                                 dtype={'qid':str,'did':str, 'label':int})
                 else:
                     raise IOError('File does not exist: ', qrels_file)

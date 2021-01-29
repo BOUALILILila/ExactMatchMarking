@@ -33,12 +33,24 @@ class CustomTFTrainingArguments(TFTrainingArguments):
     ckpt_dir: Optional[str] = field(
         default=None, metadata={"help": "Saving directory of the transformers checkpoints."}
     )
+    tf_ckpt_dir: Optional[str] = field(
+        default=None, metadata={"help": "Saving directory of the Tensorflow trainable checkpoints."}
+    )
     overwrite_ckpt_dir: bool = field(
         default=False, 
         metadata={
             "help": (
                 "Overwrite the content of the ckpt directory."
                 "Use this to continue training if ckpt_dir points to a checkpoint directory."
+            )
+        },
+    )
+    overwrite_tf_ckpt_dir: bool = field(
+        default=False, 
+        metadata={
+            "help": (
+                "Overwrite the content of the TF traninable ckpt directory."
+                "Use this to continue training if tf_ckpt_dir points to a checkpoint directory."
             )
         },
     )
@@ -64,7 +76,7 @@ class CustomTFTrainingArguments(TFTrainingArguments):
             self.ckpt_dir = os.path.join(self.output_dir, f'ckpt_{self.ckpt_name}')
         elif self.ckpt_dir is None and self.ckpt_name is None:
             raise ValueError('TrainingArguments: No checkpoint specified !')
-    
+        
         if (
             tf.io.gfile.exists(self.ckpt_dir)
             and tf.io.gfile.listdir(self.ckpt_dir)
@@ -73,4 +85,19 @@ class CustomTFTrainingArguments(TFTrainingArguments):
         ):
             raise ValueError(
                 f"TrainingArguments: ({self.ckpt_dir}) already exists and is not empty. Use --overwrite_ckpt_dir to overcome."
+            )
+        
+        if self.tf_ckpt_dir is None and self.ckpt_name is not None:
+            self.tf_ckpt_dir = os.path.join(self.output_dir, f'tf_ckpt_{self.ckpt_name}')
+        elif self.tf_ckpt_dir is None and self.ckpt_name is None:
+            raise ValueError('TrainingArguments: No TF checkpoint specified !')
+    
+        if (
+            tf.io.gfile.exists(self.tf_ckpt_dir)
+            and tf.io.gfile.listdir(self.tf_ckpt_dir)
+            and self.do_train
+            and not self.overwrite_tf_ckpt_dir
+        ):
+            raise ValueError(
+                f"TrainingArguments: ({self.tf_ckpt_dir}) already exists and is not empty. Use --overwrite_tf_ckpt_dir to overcome."
             )

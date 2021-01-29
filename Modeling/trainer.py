@@ -22,6 +22,7 @@ from absl import logging as logger
 from .metrics import BaseMetric
 from .training_args import CustomTFTrainingArguments
 from .trainer_utils import EarlyStopping
+from .pytrec_eval import trec_eval
 
 
 
@@ -38,7 +39,8 @@ class CustomTFTrainer:
     eval_set_name: Optional[str] = None
     query_doc_ids: Optional[pd.DataFrame] = None
     eval_qrels: Optional[pd.DataFrame] = None
-    eval_metric: Optional[BaseMetric] = None
+    eval_metric: Optional[BaseMetric] = 
+    trec_metrics: Optional[set] = None
     compute_metrics: Optional[Callable[[typing.Any, typing.Union[list, np.array], typing.Union[list, np.array]],float]] = None
     prediction_loss_only: bool
     tb_writer: Optional[tf.summary.SummaryWriter] = None
@@ -56,6 +58,7 @@ class CustomTFTrainer:
         num_eval_examples: Optional[int] = None,
         out_suffix: Optional[str] = None,
         eval_metric: Optional[BaseMetric] = None,
+        trec_metrics: Optional[set] = None,
         compute_metrics: Optional[Callable[[typing.Any, typing.Union[list, np.array], typing.Union[list, np.array]],float]] = None, 
         query_doc_ids: Optional[pd.DataFrame] = None,
         eval_qrels: Optional[pd.DataFrame] = None,
@@ -74,6 +77,7 @@ class CustomTFTrainer:
         self.query_doc_ids = query_doc_ids
         self.eval_qrels = eval_qrels
         self.eval_metric = eval_metric
+        self.trec_metrics = trec_metrics
         self.compute_metrics = compute_metrics
         self.prediction_loss_only = prediction_loss_only
         self.optimizers = optimizers
@@ -305,17 +309,19 @@ class CustomTFTrainer:
 
         # out_file
         file_name = f"{step}" if self.out_suffix=='' else f"{self.out_suffix}_{step}"
-        preds_file = tf.io.gfile.GFile(os.path.join(self.args.output_dir, f'predictions_{file_name}_all.tsv'), 'w')
+        # preds_file = tf.io.gfile.GFile(os.path.join(self.args.output_dir, f'predictions_{file_name}_all.tsv'), 'w')
+        
+        preds_file = tf.io.gfile.GFile(os.path.join(self.args.output_dir, f'predictions_{file_name}_maxP.tsv'), 'w')
 
         loss, df_preds = self._prediction_loop(eval_ds, num_eval_examples, description="Evaluation")
 
 
         preds_with_ids = pd.merge(df_preds,query_doc_ids, on='id')  
         
-        for i, row in preds_with_ids.iterrows():
-              preds_file.write("\t".join((str(row['qid']), str(row['did']), str(row['pass']), str(row['logits_0']), str(row['logits_1']))) + "\n")
+        # for i, row in preds_with_ids.iterrows():
+        #       preds_file.write("\t".join((str(row['qid']), str(row['did']), str(row['pass']), str(row['logits_0']), str(row['logits_1']))) + "\n")
 
-        preds_file.close()
+        # preds_file.close()
 
         
         metrics ={}
@@ -324,10 +330,17 @@ class CustomTFTrainer:
             df['pred_max']=df.groupby(['qid','did'], sort=False)['logits_1'].transform(max)
             df= df.drop_duplicates(['qid','did'], keep='first')
             df = df.sort_values(by=['qid','pred_max'], ascending=[True, False])
-            df_preds_rel = pd.merge(df, eval_qrels, on=['qid','did'], how ='left')
-            df_preds_rel['label'] = df_preds_rel['label'].fillna(0)
 
+            for i, row in df.iterrows():
+              preds_file.write("\t".join((str(row['qid']), str(row['did']), str(row['pred_max']))) + "\n")
+            preds_file.close()
+            
+            if self.trec_metrics is not None:
+                metrics = trec_eval(df,eval_qrels,self.trec_metrics)
+            
             if self.compute_metrics is not None:
+                df_preds_rel = pd.merge(df, eval_qrels, on=['qid','did'], how ='left')
+                df_preds_rel['label'] = df_preds_rel['label'].fillna(0)
                 metrics[repr(self.eval_metric)] = self.compute_metrics(df_preds_rel['qid'].values, 
                                                                 df_preds_rel['label'].values, 
                                                                 df_preds_rel['pred_max'].values)
@@ -336,11 +349,11 @@ class CustomTFTrainer:
             else:
                 logger.info('No metric was given for evaluation.')
 
-        metrics["eval_loss"] = loss
+        metrics["loss"] = loss
 
-        for key in list(metrics.keys()):
-            if not key.startswith("eval_"):
-                metrics[f"eval_{key}"] = metrics.pop(key)
+        # for key in list(metrics.keys()):
+        #     if not key.startswith("eval_"):
+        #         metrics[f"eval_{key}"] = metrics.pop(key)
 
         return metrics
 
@@ -382,9 +395,11 @@ class CustomTFTrainer:
 
         with self.strategy.scope():
             self.get_optimizers(t_total)
+
             ckpt = tf.train.Checkpoint(optimizer = self.optimizer, model = self.model)
+            
             self.model.ckpt_manager = tf.train.CheckpointManager(ckpt,
-                                                                 os.path.join(self.args.output_dir,f'tf_ckpt_{self.args.ckpt_name}'),
+                                                                 self.args.tf_ckpt_dir,
                                                                  max_to_keep=self.args.max_ckpt_keep) 
             
             iterations = self.optimizer.iterations
@@ -661,9 +676,8 @@ class CustomTFTrainer:
 
     def save_last_tf_chkpt(self, save_dir, ckpt_dir=None):
         with self.strategy.scope():
-            # self.get_optimizers()
-            # iterations = self.optimizer.iterations
-            ckpt = tf.train.Checkpoint(model=self.model)
+            self.get_optimizers(100)
+            ckpt = tf.train.Checkpoint(optimizer=self.optimizer, model=self.model)
             dir_ckpt = ckpt_dir if ckpt_dir is not None else os.path.join(self.args.output_dir, f'tf_ckpt_{self.args.ckpt_name}')
             self.model.ckpt_manager = tf.train.CheckpointManager(ckpt,
                                                                  dir_ckpt,
