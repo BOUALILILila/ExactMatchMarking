@@ -39,7 +39,7 @@ class CustomTFTrainer:
     eval_set_name: Optional[str] = None
     query_doc_ids: Optional[pd.DataFrame] = None
     eval_qrels: Optional[pd.DataFrame] = None
-    eval_metric: Optional[BaseMetric] = 
+    eval_metric: Optional[BaseMetric] = None
     trec_metrics: Optional[set] = None
     compute_metrics: Optional[Callable[[typing.Any, typing.Union[list, np.array], typing.Union[list, np.array]],float]] = None
     prediction_loss_only: bool
