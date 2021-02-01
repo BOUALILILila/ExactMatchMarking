@@ -86,6 +86,9 @@ class CustomTFTrainingArguments(TFTrainingArguments):
             raise ValueError(
                 f"TrainingArguments: ({self.ckpt_dir}) already exists and is not empty. Use --overwrite_ckpt_dir to overcome."
             )
+
+        if self.overwrite_ckpt_dir:
+            tf.io.gfile.rmtree(self.ckpt_dir)
         
         if self.tf_ckpt_dir is None and self.ckpt_name is not None:
             self.tf_ckpt_dir = os.path.join(self.output_dir, f'tf_ckpt_{self.ckpt_name}')
@@ -101,3 +104,6 @@ class CustomTFTrainingArguments(TFTrainingArguments):
             raise ValueError(
                 f"TrainingArguments: ({self.tf_ckpt_dir}) already exists and is not empty. Use --overwrite_tf_ckpt_dir to overcome."
             )
+
+        if self.overwrite_tf_ckpt_dir:
+            tf.io.gfile.rmtree(self.tf_ckpt_dir)
