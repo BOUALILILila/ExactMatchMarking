@@ -27,7 +27,7 @@ def main():
                             help='The number of documents retrieved per query.')
     parser.add_argument('--num_train_docs_perquery', default=1000, type=int,
                             help='The number of documents to include in the train set (cross validation).')
-    parser.add_argument('--sub_sample_train', default=0.1, type=int,
+    parser.add_argument('--sub_sample_train', default=0.1, type=float,
                             help='The proportion of passages to use for training (cross validation).')
     
     parser.add_argument('--dataset_path', type=str, required=False)
