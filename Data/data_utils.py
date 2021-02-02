@@ -345,7 +345,7 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
         # train fold 
         print('Creating train fold data...')
         train_data = { qid: data[qid] for qid in train_qids if qid in data }
-        self._convert_train_dataset(train_data, collection, f'train_{args.set_name}', args.num_train_docs_perquery, args.output_dir)
+        self._convert_train_dataset(train_data, collection, f'train_{args.set_name}', args.num_train_docs_perquery, args.sub_sample_train, args.output_dir)
         
         print('Done!')
         return self.stats    
@@ -355,7 +355,8 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
         data, 
         collection, 
         set_name, 
-        num_train_docs, 
+        num_train_docs,
+        prop_train, 
         output_dir
         ):
 
@@ -381,6 +382,13 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
                             passages = collection[doc_title]
                             self.stats[doc_title] = len(passages)
                             for pos, p in passages.items():
+                                # [https://github.com/AdeDZY/SIGIR19-BERT-IR/blob/master/run_qe_classifier.py#L468]
+                                # to train, we do not use all passages because it leads to overfitting
+                                # we subsample the following:
+                                #    first passage in a doc
+                                #    prop_train(10%-30%) other passages in the doc
+                                if pos != 0 and random.random() > prop_train:
+                                    continue
                                 doc_writer.write("\t".join(( clean_query, p, str(label)))+ "\n")
                         else: 
                             title, doc = collection[doc_title]
