@@ -291,5 +291,5 @@ COLLECTIONS={
     'terabyte04.701-750' : Gov2,
     'terabyte05.751-800' : Gov2,
     'terabyte06.801-850' : Gov2,
-    'clueweb09b' : ClueWeb,
+    'cw09b' : ClueWeb,
 }
