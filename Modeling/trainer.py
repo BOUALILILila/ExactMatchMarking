@@ -292,7 +292,7 @@ class CustomTFTrainer:
 
     def evaluate(
         self, eval_dataset: Optional[tf.data.Dataset] = None,  
-        prediction_loss_only: Optional[bool] = None, step = None,
+        prediction_loss_only: Optional[bool] = None, step = 'final',
         num_eval_examples: Optional[int] = None, 
         query_doc_ids: Optional[pd.DataFrame] = None,
         eval_qrels: Optional[pd.DataFrame] = None

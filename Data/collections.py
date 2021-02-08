@@ -261,6 +261,25 @@ class Gov2(TRECCollection):
         # else:
         #     content = soup.html.text
         return title, content
+
+class ClueWeb(TRECCollection):
+
+    def __init__(self, how='tokens'):
+        super().__init__('ClueWeb')
+        self.how = how.lower()
+
+    @clean_output_text  
+    def parse_doc(self, content, use_doc_title = False):
+        title = ''
+        # # The documents are not well formed html documents ==> bs4 can't work
+        # soup = BeautifulSoup(content, "lxml")
+        # if use_doc_title:
+        #     title_tag = soup.html.head.title
+        #     title = '' if title_tag is None else title_tag.text
+        #     content = soup.html.body.text
+        # else:
+        #     content = soup.html.text
+        return title, content
     
 
 COLLECTIONS={
@@ -272,4 +291,5 @@ COLLECTIONS={
     'terabyte04.701-750' : Gov2,
     'terabyte05.751-800' : Gov2,
     'terabyte06.801-850' : Gov2,
+    'clueweb09b' : ClueWeb,
 }
