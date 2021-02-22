@@ -2,6 +2,11 @@ import torch
 import argparse
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
+
+# new version of transformers
+# special_tokens_dict = {'additional_special_tokens': ['[C1]','[C2]','[C3]','[C4]']}
+# num_added_toks = t.add_special_tokens(special_tokens_dict)
+
 def main():
     
     parser = argparse.ArgumentParser()

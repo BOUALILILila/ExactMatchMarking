@@ -103,7 +103,13 @@ class TopKPrepFromRetriever(DataPrep):
         collection = {}
         with open(path) as f:
             for i, line in enumerate(f):
-                    doc_id, doc_title, doc_body = line.rstrip('\n').split('\t')
+                    try:
+                        doc_id, doc_title, doc_body = line.rstrip('\n').split('\t')
+                    except ValueError:
+                        print('line number= ',i)
+                        print('--------')
+                        print(line)
+                        sys.exit()
 
                     # body = strip_html_xml_tags(doc_body)
                     # clean_body = clean_text(body)
