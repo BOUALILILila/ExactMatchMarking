@@ -335,6 +335,8 @@ class CustomTFTrainer:
               preds_file.write("\t".join((str(row['qid']), str(row['did']), str(row['pred_max']))) + "\n")
             preds_file.close()
             
+            if self.trec_metrics is not None:
+                metrics = trec_eval(df,eval_qrels,self.trec_metrics)
             
             if self.compute_metrics is not None:
                 df_preds_rel = pd.merge(df, eval_qrels, on=['qid','did'], how ='left')
@@ -344,10 +346,7 @@ class CustomTFTrainer:
                                                                 df_preds_rel['pred_max'].values)
             elif self.args.do_early_stopping:
                 raise ValueError("Trainer: Early stopping requires compute metrics.")
-            elif self.trec_metrics is not None:
-                metrics = trec_eval(df,eval_qrels,self.trec_metrics)
-            else:
-                logger.info('No metric was given for evaluation.')
+
 
         metrics["loss"] = loss
 
