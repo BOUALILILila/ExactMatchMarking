@@ -18,6 +18,7 @@ METRICS = {
     'robust04' : MeanAveragePrecision(),
     'core17' : MeanAveragePrecision(),
     'core18' : MeanAveragePrecision(),
+    'gov2' :  MeanAveragePrecision(),
 }
 
 # from ..Data import get_collection_names
