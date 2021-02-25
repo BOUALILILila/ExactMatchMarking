@@ -98,28 +98,55 @@ class TopKPrepFromRetriever(DataPrep):
                         print(f'Loading queries {i}')
         return queries
     
-    def _load_collection(self, path):
+    def _load_collection(self, path, from_raw_docs):
         """Loads tsv collection into a dict of key: doc id, value: (title, body)."""
-        collection = {}
-        with open(path) as f:
-            for i, line in enumerate(f):
-                    try:
-                        doc_id, doc_title, doc_body = line.rstrip('\n').split('\t')
-                    except ValueError:
-                        print('line number= ',i)
-                        print('--------')
-                        print(line)
-                        sys.exit()
+        if from_raw_docs:
+            return _load_raw_collection(path)
+        else:
+            collection = {}
+            with open(path) as f:
+                for i, line in enumerate(f):
+                        try:
+                            doc_id, doc_title, doc_body = line.rstrip('\n').split('\t')
+                        except ValueError:
+                            print('line number= ',i)
+                            print('--------')
+                            print(line)
+                            sys.exit(0)
 
-                    # body = strip_html_xml_tags(doc_body)
-                    # clean_body = clean_text(body)
-                    # title = strip_html_xml_tags(doc_title)
-                    # clean_title = clean_text(title)
+                        # body = strip_html_xml_tags(doc_body)
+                        # clean_body = clean_text(body)
+                        # title = strip_html_xml_tags(doc_title)
+                        # clean_title = clean_text(title)
 
-                    collection[doc_id] = (doc_title, doc_body)
-                    if i % 1000 == 0:
-                        print(f'Loading collection, doc {i}')
-        return collection
+                        collection[doc_id] = (doc_title, doc_body)
+                        if i % 1000 == 0:
+                            print(f'Loading collection, doc {i}')
+            return collection
+    
+    def _load_raw_collection(self, path):
+        result_dict = collections.OrderedDict()
+        with open(filename, 'r') as f:
+            for line in f:
+            segments = line.strip().split("\t")
+            if len(segments) == 3:
+                docno, title, content = segments
+            elif len(segments) == 2: 
+                docno = segments[0]
+                title = ""
+                content = segments[1]
+            elif len(segments) < 2:
+                # only docid
+                docno = line.strip()
+                title = ""
+                content = "It is empty."
+            else:
+                # multiple '\t' occur
+                docno = segments[0]
+                title = segments[1]
+                content = " ".join(segments[2:])
+            result_dict.update({docno: content})
+        return result_dict
     
     def _load_run(self, path):
         raise NotImplementedError ()
@@ -182,7 +209,7 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
         data = self._merge(qrels=qrels, run=run, queries=queries)
 
         print('Loading Collection...')
-        collection = self._load_collection(args.collection_path)
+        collection = self._load_collection(args.collection_path, args.from_raw_docs)
 
         if self.split:
             collection = self._split_docs(collection)
@@ -328,7 +355,7 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
         data = self._merge(qrels=qrels, run=run, queries=queries)
 
         print('Loading Collection...')
-        collection = self._load_collection(args.collection_path)
+        collection = self._load_collection(args.collection_path, args.from_raw_docs)
         if self.split:
             collection = self._split_docs(collection)
 
@@ -423,7 +450,7 @@ class MsMarcoPassagePrep(TopKPrepFromRetriever):
         data = self._merge(qrels=qrels, run=run, queries=queries)
 
         print('Loading Collection...')
-        collection = self._load_collection(args.collection_path)
+        collection = self._load_collection(args.collection_path, args.from_raw_docs)
 
         print('Converting to TFRecord...')
         self._convert_dataset(data,collection, args.set_name,

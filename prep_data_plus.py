@@ -19,6 +19,7 @@ def main():
                             help='The path to the run file .tsv file : q_id, doc_id, score, rank, judgement.')
     parser.add_argument('--collection_path', type=str, required=False,
                             help='The path to the documents .tsv file: doc_id, title, body.')
+    parser.add_argument('--from_raw_docs', action='store_true', default=False)
     parser.add_argument('--folds_file_path', type=str, required=False,
                             help='The path to the folds json file')
     parser.add_argument('--set_name', type=str, required=True,
