@@ -126,7 +126,7 @@ class TopKPrepFromRetriever(DataPrep):
     
     def _load_raw_collection(self, path):
         result_dict = collections.OrderedDict()
-        with open(filename, 'r') as f:
+        with open(path, 'r') as f:
             for line in f:
                 segments = line.strip().split("\t")
                 if len(segments) == 3:
