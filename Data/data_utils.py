@@ -101,7 +101,7 @@ class TopKPrepFromRetriever(DataPrep):
     def _load_collection(self, path, from_raw_docs):
         """Loads tsv collection into a dict of key: doc id, value: (title, body)."""
         if from_raw_docs:
-            return _load_raw_collection(path)
+            return self._load_raw_collection(path)
         else:
             collection = {}
             with open(path) as f:
