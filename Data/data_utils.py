@@ -122,18 +122,18 @@ class TopKPrepFromRetriever(DataPrep):
         result_dict = collections.OrderedDict()
         with open(filename, 'r') as f:
             for line in f:
-            segments = line.strip().split("\t")
-            if len(segments) == 2:
-                docno, content = segments
-            elif len(segments) < 2:
-                # only docid
-                docno = line.strip()
-                content = "It is empty."
-            else:
-                # multiple '\t' occur
-                docno = segments[0]
-                content = " ".join(segments[1:])
-            result_dict.update({docno: ('',content)})
+                segments = line.strip().split("\t")
+                if len(segments) == 2:
+                    docno, content = segments
+                elif len(segments) < 2:
+                    # only docid
+                    docno = line.strip()
+                    content = "It is empty."
+                else:
+                    # multiple '\t' occur
+                    docno = segments[0]
+                    content = " ".join(segments[1:])
+                result_dict.update({docno: ('',content)})
         return result_dict
     
     # def _load_raw_collection(self, path):
