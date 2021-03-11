@@ -1,7 +1,7 @@
 import json, sys
 from collections import defaultdict
 from typing import Optional, Tuple
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, re
 
 from .data_utils import (
     MsMarcoPassagePrep, TRECDocumentPrepFromRetriever, DataPrep,
