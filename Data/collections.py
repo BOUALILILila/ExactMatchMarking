@@ -249,17 +249,13 @@ class Gov2(TRECCollection):
         super().__init__('Gov2')
         self.how = how.lower()
 
-    @clean_output_text  
+    #@clean_output_text  
     def parse_doc(self, content, use_doc_title = False):
         title = ''
-        # # The documents are not well formed html documents ==> bs4 can't work
-        # soup = BeautifulSoup(content, "lxml")
-        # if use_doc_title:
-        #     title_tag = soup.html.head.title
-        #     title = '' if title_tag is None else title_tag.text
-        #     content = soup.html.body.text
-        # else:
-        #     content = soup.html.text
+        content = re.sub(r'----*', '---', content)
+        content = re.sub(r'  *', ' ', content)
+        content = re.sub(r"\t", " ", content)
+        content = re.sub(r"\n", " ", content)
         return title, content
 
 class ClueWeb(TRECCollection):

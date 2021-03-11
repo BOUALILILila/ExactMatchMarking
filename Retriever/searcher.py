@@ -75,7 +75,7 @@ class Searcher(metaclass=ThreadSafeSingleton):
 
                         if docno not in doc_ids:
                             doc_ids.add(docno)
-                            title, content = collection.parse_doc(hits[i].raw, use_doc_title=use_doc_title)
+                            title, content = collection.parse_doc(hits[i].contents, use_doc_title=use_doc_title)
                                 
                             if use_doc_title:
                                 if title in ('None'):
