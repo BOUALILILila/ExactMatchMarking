@@ -68,7 +68,7 @@ def retrieve(col, args):
             docsearch.search_document(searcher, qid2docid, qid2text, test_qids,
                                       output_fn + str(folder_idx), args.topic_field,
                                       args.use_doc_title,
-                                      col, args.K, topics)
+                                      col, args.K, topics, use_contents=args.use_contents)
 
             folder_idx += 1
 
@@ -97,7 +97,7 @@ def retrieve(col, args):
                                                 original_query_weight=args.rm3_queryweight,
                                                 rm3=args.rm3)
         docsearch.search_document(searcher, qid2docid, qid2text, test_qids, output_fn,
-                                 args.topic_field, args.use_doc_title, col, K=args.K)
+                                 args.topic_field, args.use_doc_title, col, K=args.K, use_contents=args.use_contents)
                                  
     # Save the queries file if it is the first parsing of the topics
     if not os.path.exists(ftopic):

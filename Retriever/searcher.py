@@ -51,7 +51,7 @@ class Searcher(metaclass=ThreadSafeSingleton):
 
     def search_document(self, searcher, qid2docid, qid2text, test_qids, output_fn, field, 
                         use_doc_title, collection, 
-                        K=1000, topics=None, filter_exact_matches=False):
+                        K=1000, topics=None, filter_exact_matches=False, use_contents=False):
         col_name = collection.name().lower()
         with open(f'{output_fn}_run_{field}_{K}.tsv', 'w', encoding='utf-8') as out, \
             open(f'{output_fn}_docs_{field}_{K}.tsv', 'w', encoding='utf-8') as out_docs:
@@ -75,7 +75,8 @@ class Searcher(metaclass=ThreadSafeSingleton):
 
                         if docno not in doc_ids:
                             doc_ids.add(docno)
-                            title, content = collection.parse_doc(hits[i].contents, use_doc_title=use_doc_title)
+                            hit = hits[i].contents if use_contents else hits[i].raw
+                            title, content = collection.parse_doc(hit, use_doc_title=use_doc_title)
                                 
                             if use_doc_title:
                                 if title in ('None'):

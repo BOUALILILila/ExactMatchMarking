@@ -34,6 +34,7 @@ def main():
     parser.add_argument('--rm3_queryweight',  type=float, default=0.5, help='RM3 original_query_weight parameter, default 0.5')
 
     parser.add_argument('--index_path', default='lucene-index.robust04.pos+docvectors+rawdocs', help='Path to Lucene index')
+    parser.add_argument('--use_contents', action='store_true', default=False, help='Use contents stored in the index (if stored) if False then use Raw')
     args, other = parser.parse_known_args()
 
 

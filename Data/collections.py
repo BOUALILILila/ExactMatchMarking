@@ -174,7 +174,7 @@ class Robust04(TRECCollection):
         super().__init__('Robust04')
         self.how = how.lower()
 
-    @clean_output_text
+    #@clean_output_text
     def parse_doc(self, content, use_doc_title = False):
         ls = content.split('\n')
         see_text = False
@@ -199,7 +199,13 @@ class Robust04(TRECCollection):
                 if l == '<P>' or l == '</P>':
                     continue
                 title += l + ' '
-        return title.strip(), doc.strip()
+        title = title.strip() 
+        content = doc.strip()
+        content = re.sub(r'----*', '---', content)
+        content = re.sub(r'  *', ' ', content)
+        content = re.sub(r"\t", " ", content)
+        content = re.sub(r"\n", " ", content)
+        return title, content
 
 class Core17(TRECCollection):
 
