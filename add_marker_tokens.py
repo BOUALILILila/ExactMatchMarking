@@ -3,21 +3,20 @@ import argparse
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 
-# new version of transformers
-# special_tokens_dict = {'additional_special_tokens': ['[C1]','[C2]','[C3]','[C4]']}
-# num_added_toks = t.add_special_tokens(special_tokens_dict)
-
 def main():
     
     parser = argparse.ArgumentParser()
 
     ## Required parameters
+    parser.add_argument("--model_type", default='bert', type=str, required=True,
+                            help="bert, electra.")
     parser.add_argument("--save_dir", default=None, type=str, required=True,
                             help="The output dir, data to be saved.")
     parser.add_argument("--tokenizer_name_path", default='bert-base-uncased', type=str, required=False,
                             help=f"path to the initialization tokenizer or name in transformers")
     parser.add_argument("--name", default=None, type=str, required=True,
                             help="The name for the new extended vocabulary and model.")
+
 
     args = parser.parse_args()
 
@@ -28,25 +27,43 @@ def main():
 
     model = AutoModelForSequenceClassification.from_pretrained(args.tokenizer_name_path)
 
-    # add the tokens to the tokenizer --vocab
-    embed_1 = model.bert.embeddings.word_embeddings.weight[1031, :] # [
-    embed_2 = model.bert.embeddings.word_embeddings.weight[1041, :] # e
-    embed_3 = model.bert.embeddings.word_embeddings.weight[1033, :] # ]
-    embed_4 = model.bert.embeddings.word_embeddings.weight[1032, :] # \
+    if args.model_type.lower()=='bert':
+        # add the tokens to the tokenizer --vocab
+        embed_1 = model.bert.embeddings.word_embeddings.weight[1031, :] # [
+        embed_2 = model.bert.embeddings.word_embeddings.weight[1041, :] # e
+        embed_3 = model.bert.embeddings.word_embeddings.weight[1033, :] # ]
+        embed_4 = model.bert.embeddings.word_embeddings.weight[1032, :] # \
+    elif args.model_type.lower()=='electra':
+        # add the tokens to the tokenizer --vocab
+        embed_1 = model.electra.embeddings.word_embeddings.weight[1031, :] # [
+        embed_2 = model.electra.embeddings.word_embeddings.weight[1041, :] # e
+        embed_3 = model.electra.embeddings.word_embeddings.weight[1033, :] # ]
+        embed_4 = model.electra.embeddings.word_embeddings.weight[1032, :] # \
+    else:
+        raise ValueError('model type unkown ')
+
     l1 = [embed_1, embed_2, embed_3]
     l2 = [embed_1, embed_4, embed_2, embed_3]
+
     for i in range(nb_tokens):
+        # embed of the i 
         token_id = init_tokenizer.encode_plus(f'e{i}', add_special_tokens= False)['input_ids'][1]
-        embed = model.bert.embeddings.word_embeddings.weight[token_id, :]
+        if args.model_type.lower()=='bert':
+            embed = model.bert.embeddings.word_embeddings.weight[token_id, :]
+        elif args.model_type.lower()=='electra':
+            embed = model.electra.embeddings.word_embeddings.weight[token_id, :]
         
         tokenizer.add_tokens(f'[e{i}]')
-        model.resize_token_embeddings(len(tokenizer))
-        model.bert.embeddings.word_embeddings.weight[-1, :] = torch.mean(torch.stack([embed_1, embed_2, embed, embed_3]), axis = 0)
-
         tokenizer.add_tokens(f'[\e{i}]')
         model.resize_token_embeddings(len(tokenizer))
-        model.bert.embeddings.word_embeddings.weight[-1, :] = torch.mean(torch.stack([embed_1, embed_4, embed_2, embed, embed_3]), axis = 0)
-
+        with torch.no_grad():
+            if args.model_type.lower()=='bert':
+                model.bert.embeddings.word_embeddings.weight[-1, :] = torch.mean(torch.stack([embed_1, embed_4, embed_2, embed, embed_3]), axis = 0)
+                model.bert.embeddings.word_embeddings.weight[-2, :] = torch.mean(torch.stack([embed_1, embed_2, embed, embed_3]), axis = 0)
+            if args.model_type.lower()=='electra':
+                model.electra.embeddings.word_embeddings.weight[-1, :] = torch.mean(torch.stack([embed_1, embed_4, embed_2, embed, embed_3]), axis = 0)
+                model.electra.embeddings.word_embeddings.weight[-2, :] = torch.mean(torch.stack([embed_1, embed_2, embed, embed_3]), axis = 0)
+        
     # Save
     print(f'saving to {args.save_dir}/pre_model_{args.name}, pre_tokenizer_{args.name}')
     model.save_pretrained(f"{args.save_dir}/pre_model_{args.name}")  
