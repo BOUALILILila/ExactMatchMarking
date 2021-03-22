@@ -51,10 +51,19 @@ def main():
                             chunk_size = args.chunk_size, 
                             stride = args.stride)
 
+    print('+ Collection: ', col.name)
+    print('+ Processor: ', type(processor))
 
     if args.set in ('test', 'dev'):
+        print(
+            'Eval set...'
+        )
         processor.prepare_inference_dataset_doc_level(tokenizer, marker, args.data_path, args.output_dir, f'{args.set}_{args.set_name}')
+        
     elif args.set == 'train':
+        print(
+            'Train set...'
+        )
         processor.prepare_train_dataset(tokenizer, marker, args.data_path, args.output_dir, f'{args.set}_{args.set_name}')
     else :
         raise ValueError("Set must be in ['train', 'dev', 'test] !")
