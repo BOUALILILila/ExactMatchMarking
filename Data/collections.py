@@ -57,7 +57,7 @@ class MsMarco(Collection):
     
     def get_processor(self, max_seq_len = 512, max_query_len = 64, **kwargs):
         handle = PassageHandle(max_seq_len, max_query_len, **kwargs)
-        return PassageProcessor(handle, marker)
+        return PassageProcessor(handle)
 
 class DocumentCol(Collection):
 
