@@ -58,6 +58,7 @@ def main():
     else:
         prep = col.get_prep()
     
+    stats = None
     if args.fold>0:
         stats = prep.create_kfold_cross_validation_data(args)
     elif args.set in ('test', 'dev'):

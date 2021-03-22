@@ -1,6 +1,6 @@
 import argparse
 import os
-from transformers import AutoTokenizer, BertTokenizerFast
+from transformers import AutoTokenizer
 
 from Data import get_available_collections, get_collection, get_marker
 
@@ -42,7 +42,7 @@ def main():
         
     col = get_collection(args.collection, how='words')
 
-    tokenizer = BertTokenizerFast.from_pretrained(args.tokenizer_name_path)
+    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name_path)
     
     marker = get_marker(args.strategy.lower())
 
