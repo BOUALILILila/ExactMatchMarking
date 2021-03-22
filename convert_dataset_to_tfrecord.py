@@ -1,6 +1,6 @@
 import argparse
 import os
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, BertTokenizerFast, ElectraTokenizerFast
 
 from Data import get_available_collections, get_collection, get_marker
 
@@ -12,6 +12,7 @@ def main():
     ## Required parameters
     parser.add_argument('--collection', type=str, required=True, help=f'{get_available_collections()}')
     parser.add_argument('--set', type=str, default='test')
+    parser.add_argument('--tokenizer_type', type=str, default='bert')
     parser.add_argument("--strategy", default=None, type=str, required=True,
                             help="the marking strategy in ('base', 'sim_doc', 'sim_pair', 'pre_doc', 'pre_pair')")
     parser.add_argument("--data_path", default=None, type=str, required=True,
@@ -42,8 +43,13 @@ def main():
         
     col = get_collection(args.collection, how='words')
 
-    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name_path)
-    
+    if args.tokenizer_type.lower()=='bert':
+        tokenizer = BertTokenizerFast.from_pretrained(args.tokenizer_name_path)
+    elif args.tokenizer_type.lower()=='electra':
+        tokenizer = ElectraTokenizerFast.from_pretrained(args.tokenizer_name_path)
+    else:
+        raise ValueError("Tokenizer type unknown")
+
     marker = get_marker(args.strategy.lower())
 
     processor = col.get_processor(args.max_seq_len, args.max_query_len,
