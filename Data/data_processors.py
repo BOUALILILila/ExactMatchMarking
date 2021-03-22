@@ -119,7 +119,7 @@ class PassageProcessor(DataProcessor):
                         set_name: str,
     ):
         tf_writer = tf.io.TFRecordWriter(f"{output_dir}/dataset_{set_name}.tf")
-        tsv_writer = open(f"{output_dir}/pairs_{set_name}.tsv", 'w')
+        #tsv_writer = open(f"{output_dir}/pairs_{set_name}.tsv", 'w')
 
         start_time = time.time()
 
@@ -141,9 +141,9 @@ class PassageProcessor(DataProcessor):
                 q, p = marker.mark(query, doc)
                 # write tfrecord
                 self.handle.write_train_example(tf_writer, tokenizer, q, [p], [int(label)])
-                tsv_writer.write(f"{q}\t{p}\t{label}\n")
+                #tsv_writer.write(f"{q}\t{p}\t{label}\n")
         tf_writer.close()
-        tsv_writer.close()
+        #tsv_writer.close()
 
     def prepare_inference_dataset(
                         self,

@@ -5,7 +5,7 @@ import re, sys
 from bs4 import BeautifulSoup
 import functools
 import json
-
+import six
 
 from .convert_to_udel import UdelConverter
 
@@ -550,6 +550,25 @@ class MsMarcoPassagePrep(TopKPrepFromRetriever):
 
         return sorted_run
 
+    def convert_to_unicode(self, text):
+    """Converts `text` to Unicode (if it's not already), assuming utf-8 input."""
+    if six.PY3:
+        if isinstance(text, str):
+        return text
+        elif isinstance(text, bytes):
+        return text.decode("utf-8", "ignore")
+        else:
+        raise ValueError("Unsupported string type: %s" % (type(text)))
+    elif six.PY2:
+        if isinstance(text, str):
+        return text.decode("utf-8", "ignore")
+        elif isinstance(text, unicode):
+        return text
+        else:
+        raise ValueError("Unsupported string type: %s" % (type(text)))
+    else:
+        raise ValueError("Not running on Python2 or Python 3?")
+
     def convert_train_dataset(
             self,
             args,
@@ -564,8 +583,8 @@ class MsMarcoPassagePrep(TopKPrepFromRetriever):
         print(f'{num_lines} examples found.')
 
         ''' this argument is not in prep_data'''
-        if args.do_udel: 
-            converter = UdelConverter()
+        # if args.do_udel: 
+        #     converter = UdelConverter()
         
         with open(os.path.join(args.output_dir, f'{args.set_name}_pairs.tsv'), 'w') as out:
             with open(args.dataset_path, 'r') as f:
@@ -578,17 +597,27 @@ class MsMarcoPassagePrep(TopKPrepFromRetriever):
 
                     query, positive_doc, negative_doc = line.rstrip().split('\t')
 
-                    clean_query = clean_text(query)
-                    positive_doc = strip_html_xml_tags(positive_doc)
-                    positive_doc = clean_text(positive_doc)
-                    negative_doc = strip_html_xml_tags(negative_doc)
-                    negative_doc = clean_text(negative_doc)
+                    query = self.convert_to_unicode(query)
+                    positive_doc = self.convert_to_unicode(positive_doc)
+                    negative_doc = self.convert_to_unicode(negative_doc)
 
-                    if args.do_udel:
-                        clean_query = converter.convert_query_to_udel(clean_query)
+                    if i<2:
+                        print('This is an Example:')
+                        print('Query: ', query)
+                        print('Pos doc: ', positive_doc)
+                        print('Neg doc: ', negative_doc)
 
-                    out.write('\t'.join([clean_query, positive_doc, '1'])+'\n')
-                    out.write('\t'.join([clean_query, negative_doc, '0'])+'\n')     
+                    # clean_query = clean_text(query)
+                    # positive_doc = strip_html_xml_tags(positive_doc)
+                    # positive_doc = clean_text(positive_doc)
+                    # negative_doc = strip_html_xml_tags(negative_doc)
+                    # negative_doc = clean_text(negative_doc)
+
+                    # if args.do_udel:
+                    #     clean_query = converter.convert_query_to_udel(clean_query)
+
+                    out.write('\t'.join([query, positive_doc, '1'])+'\n')
+                    out.write('\t'.join([query, negative_doc, '0'])+'\n')     
 
         print('Writer closed, DONE !')
         print(f'Writer closed with {(i+1)*2} lines.')
