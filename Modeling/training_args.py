@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 import os
 import tensorflow as tf
 from typing import Optional
+import warnings
 from transformers import TFTrainingArguments
 
 from absl import logging as logger
@@ -40,8 +41,8 @@ class CustomTFTrainingArguments(TFTrainingArguments):
         default=False, 
         metadata={
             "help": (
-                "Overwrite the content of the ckpt directory."
-                "Use this to continue training if ckpt_dir points to a checkpoint directory."
+                "True: Overwrite the content of the ckpt directory."
+                "False: Continue training if ckpt_dir points to a checkpoint directory."
             )
         },
     )
@@ -49,8 +50,8 @@ class CustomTFTrainingArguments(TFTrainingArguments):
         default=False, 
         metadata={
             "help": (
-                "Overwrite the content of the TF traninable ckpt directory."
-                "Use this to continue training if tf_ckpt_dir points to a checkpoint directory."
+                "True: Overwrite the content of the TF traninable ckpt directory."
+                "False: Continue training if tf_ckpt_dir points to a checkpoint directory."
             )
         },
     )
@@ -83,12 +84,12 @@ class CustomTFTrainingArguments(TFTrainingArguments):
             and self.do_train
             and not self.overwrite_ckpt_dir
         ):
-            raise ValueError(
-                f"TrainingArguments: ({self.ckpt_dir}) already exists and is not empty. Use --overwrite_ckpt_dir to overcome."
+            warnings.warn(
+                f"TrainingArguments: ({self.ckpt_dir}) already exists and is not empty. Use --overwrite_ckpt_dir to delete its contents."
             )
 
-        if self.overwrite_ckpt_dir and tf.io.gfile.exists(self.ckpt_dir) and tf.io.gfile.listdir(self.ckpt_dir):
-            tf.io.gfile.rmtree(self.ckpt_dir)
+        # if self.overwrite_ckpt_dir and tf.io.gfile.exists(self.ckpt_dir) and tf.io.gfile.listdir(self.ckpt_dir):
+        #     tf.io.gfile.rmtree(self.ckpt_dir)
         
         if self.tf_ckpt_dir is None and self.ckpt_name is not None:
             self.tf_ckpt_dir = os.path.join(self.output_dir, f'tf_ckpt_{self.ckpt_name}')
@@ -101,9 +102,11 @@ class CustomTFTrainingArguments(TFTrainingArguments):
             and self.do_train
             and not self.overwrite_tf_ckpt_dir
         ):
-            raise ValueError(
-                f"TrainingArguments: ({self.tf_ckpt_dir}) already exists and is not empty. Use --overwrite_tf_ckpt_dir to overcome."
+            warnings.wran(
+                f"TrainingArguments: ({self.tf_ckpt_dir}) already exists and is not empty. \
+                Continuing training from last tf checkpoint if exists. \
+                Use --overwrite_tf_ckpt_dir to overwrite existing checkpoints (restart training)."
             )
 
-        if self.overwrite_tf_ckpt_dir and tf.io.gfile.exists(self.tf_ckpt_dir) and tf.io.gfile.listdir(self.tf_ckpt_dir):
-            tf.io.gfile.rmtree(self.tf_ckpt_dir)
+        # if self.overwrite_tf_ckpt_dir and tf.io.gfile.exists(self.tf_ckpt_dir) and tf.io.gfile.listdir(self.tf_ckpt_dir):
+        #     tf.io.gfile.rmtree(self.tf_ckpt_dir)

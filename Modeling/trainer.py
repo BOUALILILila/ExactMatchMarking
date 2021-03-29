@@ -405,7 +405,7 @@ class CustomTFTrainer:
             epochs_trained = 0
             steps_trained_in_current_epoch = 0
 
-            if self.model.ckpt_manager.latest_checkpoint:
+            if self.model.ckpt_manager.latest_checkpoint and not self.args.overwrite_tf_ckpt_dir:
                 logger.info(
                     "Checkpoint file %s found and restoring from checkpoint", self.model.ckpt_manager.latest_checkpoint
                 )
