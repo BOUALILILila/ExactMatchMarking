@@ -102,7 +102,7 @@ class CustomTFTrainingArguments(TFTrainingArguments):
             and self.do_train
             and not self.overwrite_tf_ckpt_dir
         ):
-            warnings.wran(
+            warnings.warn(
                 f"TrainingArguments: ({self.tf_ckpt_dir}) already exists and is not empty. \
                 Continuing training from last tf checkpoint if exists. \
                 Use --overwrite_tf_ckpt_dir to overwrite existing checkpoints (restart training)."
