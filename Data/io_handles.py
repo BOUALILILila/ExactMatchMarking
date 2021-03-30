@@ -32,8 +32,7 @@ class TFRecordHandle(object):
         dataset = dataset.map( lambda record : self._extract_fn_eval(record)).prefetch(batch_size*1000)
         if num_skip > 0:
             dataset = dataset.skip(num_skip)
-        count = tf.data.experimental.cardinality(dataset)
-        # count = dataset.reduce(0, lambda x, _: x + 1)
+        count = dataset.reduce(0, lambda x, _: x + 1)
         dataset = dataset.padded_batch(
                     batch_size=batch_size,
                     padded_shapes=({
@@ -100,8 +99,8 @@ class PassageHandle(TFRecordHandle):
     def get_train_dataset (self, data_path, batch_size, seed = 42):
         dataset = tf.data.TFRecordDataset([data_path])
         dataset = dataset.map( lambda record : self._extract_fn_train(record)).prefetch(batch_size*1000)
-        count = tf.data.experimental.cardinality(dataset)
-        # count = dataset.reduce(0, lambda x, _: x + 1)
+        # count = dataset.cardinality()
+        count = dataset.reduce(0, lambda x, _: x + 1)
         dataset = dataset.repeat()
         dataset = dataset.shuffle(buffer_size=1000, seed=seed)
         dataset = dataset.padded_batch(
@@ -650,8 +649,7 @@ class DocumentSplitterHandle(DocumentHandle):
     def get_train_dataset (self, data_path, batch_size, seed = 42):
         dataset = tf.data.TFRecordDataset([data_path])
         dataset = dataset.map( lambda record : self._extract_fn_train(record)).prefetch(batch_size*1000)
-        count = tf.data.experimental.cardinality(dataset)
-        # count = dataset.reduce(0, lambda x, _: x + 1)
+        count = dataset.reduce(0, lambda x, _: x + 1)
         dataset = dataset.repeat()
         dataset = dataset.shuffle(buffer_size=1000, seed=seed)
         dataset = dataset.padded_batch(
