@@ -420,7 +420,7 @@ class CustomTFTrainer:
                 logger.info("  Continuing training from checkpoint, will skip to saved global_step")
                 logger.info("  Continuing training from epoch %d", epochs_trained)
                 logger.info("  Continuing training from global step %d", step)
-                logger.info("  Will skip the first %d steps in the first epoch", steps_trained_in_current_epoch)
+                logger.info("  Will skip the first %d steps in the %d epoch", steps_trained_in_current_epoch, epochs_trained+1)
 
 
         tf.summary.experimental.set_step(iterations)
@@ -442,10 +442,22 @@ class CustomTFTrainer:
         logger.info("  Num examples = %d", self.num_train_examples)
         logger.info("  Num Epochs = %d", epochs)
         logger.info("  Total optimization steps = %d", t_total)
-
+        
         for epoch in range(epochs_trained, int(epochs)):
             logger.info("Starting Epoch {} ...".format(epoch+1))
-            for training_loss in self._training_steps(): # do train on batch, apply gradients return loss
+            # Create iterator over train dataset
+            iterator = iter(self.train_dataset)
+            # Skip past any already trained steps if resuming training
+            if steps_trained_in_current_epoch > 0:
+                logger.info("Skipping the first %d trained steps ...", steps_trained_in_current_epoch)
+                steps_to_skip = steps_trained_in_current_epoch
+                while steps_trained_in_current_epoch > 0:
+                    iterator.get_next()
+                    steps_trained_in_current_epoch -= 1
+                logger.info("%d training steps skipped. Resuming training at step %d...", steps_to_skip, step)
+
+
+            for training_loss in self._training_steps(iterator): # do train on batch, apply gradients return loss
                 step = iterations.numpy()
                 if self.args.debug:
                     with self.tb_writer.as_default():
@@ -502,11 +514,11 @@ class CustomTFTrainer:
                 break
                 
 
-    def _training_steps(self):
+    def _training_steps(self, iterator):
         """
         Returns a generator over training steps (i.e. parameters update).
         """
-        for i, loss in enumerate(self._accumulate_next_gradients()):
+        for i, loss in enumerate(self._accumulate_next_gradients(iterator)):
             if i % self.args.gradient_accumulation_steps == 0:
                 self._apply_gradients()
                 yield loss
@@ -528,9 +540,9 @@ class CustomTFTrainer:
         self.optimizer.apply_gradients(list(zip(gradients, self.model.trainable_variables)))
         self.gradient_accumulator.reset()
 
-    def _accumulate_next_gradients(self):
+    def _accumulate_next_gradients(self, iterator):
         """Accumulates the gradients from the next element in dataset."""
-        iterator = iter(self.train_dataset)
+        # iterator = iter(self.train_dataset)
 
         @tf.function
         def _accumulate_next():

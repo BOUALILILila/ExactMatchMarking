@@ -21,8 +21,22 @@ class TFElectraRelevanceHead(tf.keras.layers.Layer):
         return x
 
 
-def wrap_relevance_head(model):
-    if isinstance(model, TFElectraForSequenceClassification):
-        dropout, fc = model.classifier.dropout, model.classifier.out_proj
-        model.classifier = TFElectraRelevanceHead(dropout, fc)
-    return model
+class ClassificationHeadWrapper:
+
+    def __init__(self):
+        self.electra_classifier = None
+
+    def wrap_relevance_head(self, model):
+        if isinstance(model, TFElectraForSequenceClassification):
+            dropout, fc = model.classifier.dropout, model.classifier.out_proj
+            self.electra_classifier = model.classifier
+            model.classifier = TFElectraRelevanceHead(dropout, fc) # name='classifier'
+        return model
+
+    def unwrap_relevance_head(self, model):
+        if isinstance(model, TFElectraForSequenceClassification):
+            if self.electra_classifier is None :
+                raise ValueError('Cannot unwarap relevance head, Electra Classification Head is None')
+            self.electra_classifier.dropout, self.electra_classifier.out_proj = model.classifier.dropout, model.classifier.out_proj
+            model.classifier = self.electra_classifier
+        return model
