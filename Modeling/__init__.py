@@ -12,7 +12,10 @@ from .trainer_utils import EarlyStopping
 
 from .training_args import CustomTFTrainingArguments
 from .trainer import CustomTFTrainer
-from .reRankers import ClassificationHeadWrapper
+from .reRankers import (
+    TFElectraForRelevanceClassification,
+    wrap_relevance_head,
+)
 
 METRICS = {
     'msmarco' : MeanReciprocalRank(),
