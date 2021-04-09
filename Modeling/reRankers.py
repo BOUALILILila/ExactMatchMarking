@@ -15,7 +15,7 @@ class TFElectraForRelevanceClassification(TFElectraForSequenceClassification):
         super().__init__(config, *inputs, **kwargs)
         self.num_labels = config.num_labels
         self.electra = TFElectraMainLayer(config, name="electra")
-        self.classifier = TFElectraRelevanceHead(dropout=None, out_proj=None, config, name="classifier")
+        self.classifier = TFElectraRelevanceHead(None, None, config, name="classifier")
 
 
 class TFElectraRelevanceHead(tf.keras.layers.Layer):
