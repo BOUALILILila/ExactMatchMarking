@@ -22,7 +22,7 @@ class TFElectraRelevanceHead(tf.keras.layers.Layer):
     """ BERT-style ClassificationHead (i.e., out_proj only -- no dense). See transformers.TFElectraClassificationHead
         from https://github.com/capreolus-ir/capreolus/blob/master/capreolus/reranker/TFBERTMaxP.py """
 
-    def __init__(self, dropout=None, out_proj=None, *args, **kwargs):
+    def __init__(self, dropout=None, out_proj=None, config=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.dropout = dropout if dropout is not None else tf.keras.layers.Dropout(config.hidden_dropout_prob)
         self.out_proj = out_proj if out_proj is not None else tf.keras.layers.Dense(
