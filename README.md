@@ -2,6 +2,22 @@
 Deep neural models pretrained on auxiliary text tasks exemplified by BERT reported impressive gains in the ad hoc retrieval task. However, important cues of this task, such as *exact matching*, were rarely addressed in previous work, where relevance is formalized as a matching problem between two segments of text similarly to Natural Language Processing (NLP) tasks. In this work, we propose to explicitly mark the terms that exactly match between the query and the document in the input of BERT, assuming that it is capable of learning how to integrate the exact matching signal when estimating the relevance. Our simple yet effective approach reports improvements in the ranking accuracy for three ad hoc benchmark collections.
 
 ---
+
+## Resources 
+- Fine-tuned models on the MSMARCO passage ranking dataset:
+
+| Model        | L / H    | Path |
+|--------------|----------|------|
+| ELECTRA-vanilla | 12 / 768 | [Download]() |
+| ELECTRA-Sim-Pair    | 12 / 768 | [Download]() |
+| ELECTRA-Pre-Pair    | 12 / 768 | [Download]() |
+| ELECTRA-Pre-Doc    | 12 / 768 | [Download]() |
+| BERT-vanilla    | 12 / 768 | [Download]() |
+| BERT-Sim-Pair    | 12 / 768 | [Download]() |
+| BERT-Pre-Pair    | 12 / 768 | [Download]() |
+| BERT-Pre-Doc    | 12 / 768 | [Download]() |
+---
+
 ## Set up the environment !
 We use a retrieve-and-rerank architecture for our experiments where [Anserini](https://github.com/castorini/anserini) is used for the retriever stage. Our experiments were done under the 0.9.4 version of the library. Please follow the installation instructions on their Github repo. 
 
