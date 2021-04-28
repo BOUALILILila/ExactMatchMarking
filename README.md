@@ -4,7 +4,7 @@ Deep neural models pretrained on auxiliary text tasks exemplified by BERT report
 ---
 
 ## Resources 
-- Fine-tuned models on the MSMARCO passage ranking dataset:
+Fine-tuned models on the MS MARCO passage dataset:
 
 | Model        | L / H    | Path |
 |--------------|----------|------|
