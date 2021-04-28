@@ -118,6 +118,8 @@ python ./run_model.py --output_dir ${output_dir} \ # save the model checkpoints 
 ```
 ---
 ## Inference 
+Here we give examples for the zero-shot setting. Please refer to the scripts for full examples for both the zero-shot trasnfer setting and the multi-phase fine-tuning data preparation. For the actual training/testing refer to the Notebooks. You can run the models on GPU as well, just omit the ```tpu_name``` argument and the code will automatically use the GPUs if available. Check [TFTrainingArguments](https://github.com/huggingface/transformers/blob/v3.3.0/src/transformers/training_args_tf.py#L119) for more details about the devise use. 
+
 ### Index the collections !
 We use [Anserini](https://github.com/castorini/anserini) for indexing our collections. Follow the quidlines:
 
@@ -216,8 +218,27 @@ python ./convert_dataset_to_tfrecord.py --collection $collection \
 ### Run the Model !
 Check the notebook for the zero-shot trasnfer setting.
 
-For more settings please check the scripts.
+## Evaluation
+After running the model, all you need is to fetch the prediction files. The code saves two versions: one with the MaxP (```_maxP.tsv```) strategy ready to evaluate and the other saves all (```_all.tsv```) passage probabilities if you want further manipulations.
 
+We use the ```pytrec_eval``` library:
+```
+python ./trec_eval.py \
+                     --output_dir /path/for/saving/perquery/metrics \ # Optional, only used when -per_query flag is set
+                     --qrels_path ${DATA_DIR}/qrels/qrels.${collection}.txt \
+                     --preds_path /path/to/predictions/file \ # MaxP file: {qid}\t{did}\t{score}
+                     --per_query # If you need the per query metrics 
+```
+## BM25 scores interpolation
+```
+python ./score_comb.py \
+                    --output_dir ./output/dir/for/new/predictions \
+                    --doc_scores_path /path/to/${collection}_run_${field}_${k}.tsv \ # the run file of BM25 produced by the retrieve.py script
+                    --preds_path /path/to/predictions/file \ # MaxP file: {qid}\t{did}\t{score}
+                    --qrels_path ${DATA_DIR}/qrels/qrels.${collection}.txt \
+                    --folds_path ${DATA_DIR}/folds/${collection}-folds.json # folds.json config
+```
+See ```scripts/zero-shot/comb_bm25.sh``` for a full script with evaluations before and after interpolating BM25 scores. 
 ***
 ## References
 <a id="1">[1]</a> 
