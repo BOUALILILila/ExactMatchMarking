@@ -239,6 +239,10 @@ python ./score_comb.py \
                     --folds_path ${DATA_DIR}/folds/${collection}-folds.json # folds.json config
 ```
 See ```scripts/zero-shot/comb_bm25.sh``` for a full script with evaluations before and after interpolating BM25 scores. 
+
+## Acknowledgement
+Some code parts were copied or modified from: [dl4marco-bert](https://github.com/nyu-dl/dl4marco-bert), [SIGIR19-BERT-IR](https://github.com/AdeDZY/SIGIR19-BERT-IR), [Birch](https://github.com/castorini/birch/tree/master), [PARADE](https://github.com/canjiali/PARADE), [Capreolus](https://github.com/capreolus-ir/capreolus)
+
 ***
 ## References
 <a id="1">[1]</a> 
