@@ -255,7 +255,7 @@ class Gov2(TRECCollection):
         super().__init__('Gov2')
         self.how = how.lower()
 
-    #@clean_output_text  
+    #@clean_output_text  # check data_utils for preprocessing code if you need
     def parse_doc(self, content, use_doc_title = False):
         title = ''
         content = re.sub(r'----*', '---', content)
