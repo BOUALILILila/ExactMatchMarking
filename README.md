@@ -4,18 +4,27 @@ Deep neural models pretrained on auxiliary text tasks exemplified by BERT report
 ---
 
 ## Resources 
-Fine-tuned models on the MS MARCO passage dataset:
 
-| Model        | L / H    | Path |
-|--------------|----------|------|
-| ELECTRA-vanilla | 12 / 768 | [Download]() |
-| ELECTRA-Sim-Pair    | 12 / 768 | [Download]() |
-| ELECTRA-Pre-Pair    | 12 / 768 | [Download]() |
-| ELECTRA-Pre-Doc    | 12 / 768 | [Download]() |
-| BERT-vanilla    | 12 / 768 | [Download]() |
-| BERT-Sim-Pair    | 12 / 768 | [Download]() |
-| BERT-Pre-Pair    | 12 / 768 | [Download]() |
-| BERT-Pre-Doc    | 12 / 768 | [Download]() |
+Our fine-tuned models on MS MARCO can be directly used from the HuggingFace Model hub (PyTorch or TF2): 
+### TF2 framework:
+```
+from transformers import TFAutoModelForSequenceClassification
+
+model = TFAutoModelForSequenceClassification.from_pretrained('LilaBoualili/bert-sim-pair')
+```
+### PyTorch framework:
+```
+from transformers import AutoModelForSequenceClassification
+
+model = AutoModelForSequenceClassification.from_pretrained('LilaBoualili/bert-sim-pair')
+```
+
+Here is the complete list of models under ```LilaBoualili/```:
+- bert-vanilla | electra-vanilla
+- bert-sim-pair | electra-sim-pair
+- bert-sim-doc | electra-sim-doc
+- bert-pre-pair | electra-pre-pair
+- bert-pre-doc | electra-pre-doc
 ---
 
 ## Set up the environment !
