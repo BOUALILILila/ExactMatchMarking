@@ -32,7 +32,7 @@ class CustomTFTrainingArguments(TFTrainingArguments):
         default=None, metadata={"help": "Name of the directory containing all checkpoints."}
     )
     ckpt_dir: Optional[str] = field(
-        default=None, metadata={"help": "Saving directory of the transformers checkpoints."}
+        default=None, metadata={"help": "Saving directory of the transformers checkpoints. Different format from tf_ckpt_dir."}
     )
     tf_ckpt_dir: Optional[str] = field(
         default=None, metadata={"help": "Saving directory of the Tensorflow trainable checkpoints."}

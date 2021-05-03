@@ -44,25 +44,25 @@ def main():
     dfrun_A.columns = ['qid','did','score','pos','rel']
         
     # maxP
-    # dfrun_B = pd.read_csv(args.preds_path, sep = '\t', header=None, dtype={0:str, 1:str})
-    # dfrun_B.columns = ['qid','did','score']
+    dfrun_B = pd.read_csv(args.preds_path, sep = '\t', header=None, dtype={0:str, 1:str})
+    dfrun_B.columns = ['qid','did','score']
     
     # all
-    dfrun_B = pd.read_csv(args.preds_path, sep = '\t', header=None, dtype={0:str, 1:str})
-    dfrun_B.columns = ['qid','did','pass','logit_0','logit_1']
-    dfrun_B = dfrun_B.sort_values(by=['qid','did','logit_1'], ascending=[True,True,False])
-    dfrun_B = dfrun_B.drop_duplicates(['qid','did'], keep='first')
-    logits = dfrun_B[['logit_0','logit_1']].values
+    # dfrun_B = pd.read_csv(args.preds_path, sep = '\t', header=None, dtype={0:str, 1:str})
+    # dfrun_B.columns = ['qid','did','pass','logit_0','logit_1']
+    # dfrun_B = dfrun_B.sort_values(by=['qid','did','logit_1'], ascending=[True,True,False])
+    # dfrun_B = dfrun_B.drop_duplicates(['qid','did'], keep='first')
+    # logits = dfrun_B[['logit_0','logit_1']].values
     # #logsoftmax
     # dfrun_B['score'] = tf.nn.log_softmax(logits)[:,1].numpy()
 
     # #probabilitites softmax [0,1]
-    dfrun_B['score'] = tf.nn.softmax(logits)[:,1].numpy()
-    ## min-max norm to bm25 scores [0,1]
-    scores = dfrun_A['score'].to_numpy().reshape(-1,1)
-    scaler = MinMaxScaler()
-    scaler.fit(scores)
-    dfrun_A['score'] = scaler.transform(scores)
+    # dfrun_B['score'] = tf.nn.softmax(logits)[:,1].numpy()
+    # ## min-max norm to bm25 scores [0,1]
+    # scores = dfrun_A['score'].to_numpy().reshape(-1,1)
+    # scaler = MinMaxScaler()
+    # scaler.fit(scores)
+    # dfrun_A['score'] = scaler.transform(scores)
     
         
     dfrun = pd.merge(dfrun_A, dfrun_B, on=['qid','did'])
