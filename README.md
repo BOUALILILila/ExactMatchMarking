@@ -10,16 +10,16 @@ Our fine-tuned models on MS MARCO can be directly used from the HuggingFace Mode
 ```
 from transformers import TFAutoModelForSequenceClassification
 
-model = TFAutoModelForSequenceClassification.from_pretrained('bert-sim-pair')
+model = TFAutoModelForSequenceClassification.from_pretrained('LilaBoualili/bert-sim-pair')
 ```
 ### PyTorch framework:
 ```
 from transformers import AutoModelForSequenceClassification
 
-model = AutoModelForSequenceClassification.from_pretrained('bert-sim-pair')
+model = AutoModelForSequenceClassification.from_pretrained('LilaBoualili/bert-sim-pair')
 ```
 
-Here is the complete list of models:
+Here is the complete list of models under ```LilaBoualili/```:
 - bert-vanilla | electra-vanilla
 - bert-sim-pair | electra-sim-pair
 - bert-sim-doc | electra-sim-doc
