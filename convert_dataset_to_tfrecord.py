@@ -64,7 +64,7 @@ def main():
         print(
             'Eval set...'
         )
-        processor.prepare_inference_dataset_doc_level(tokenizer, marker, args.data_path, args.output_dir, f'{args.set}_{args.set_name}')
+        processor.prepare_inference_dataset(tokenizer, marker, args.data_path, args.output_dir, f'{args.set}_{args.set_name}')
         
     elif args.set == 'train':
         print(
