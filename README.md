@@ -25,6 +25,8 @@ Here is the complete list of models under ```LilaBoualili/```:
 - bert-sim-doc | electra-sim-doc
 - bert-pre-pair | electra-pre-pair
 - bert-pre-doc | electra-pre-doc
+
+These models and corresponding tokenizers can be directly used for inference. We still provide the full code for the fine-tuning.
 ---
 
 ## Set up the environment !
