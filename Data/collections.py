@@ -4,9 +4,12 @@ from typing import Optional, Tuple
 from bs4 import BeautifulSoup, re
 
 from .data_utils import (
-    MsMarcoPassagePrep, TRECDocumentPrepFromRetriever, DataPrep,
+    MsMarcoPassagePrep, 
+    TRECDocumentPrepFromRetriever, 
+    MsMarcoDocumentPrep,
+    DataPrep,
     clean_output_text)
-from .io_handles import PassageHandle, DocumentSplitterHandle, TFRecordHandle
+from .io_handles import PassageHandle, DocumentSplitterHandle
 from .data_processors import PassageProcessor, DocumentProcessor, DataProcessor
 
 def get_available_collections():
@@ -40,7 +43,7 @@ class Collection(object):
     def get_processor(self, max_seq_len = 512, max_query_len = 64, **kwargs) -> DataProcessor:
         raise NotImplementedError()
 
-class MsMarco(Collection):
+class MsMarcoPassage(Collection):
 
     def __init__(self, *args):
         super().__init__('MsMarco')
@@ -65,14 +68,13 @@ class DocumentCol(Collection):
     def parse_doc(self, content, use_doc_title = False)-> Tuple[str,str]:
         raise NotImplementedError()
     
-    def get_prep(
-        self,
-        plen = 150, 
-        overlap = 50, 
-        tlen = 0,
-        max_pass_per_doc = 30,
-    ) -> DataPrep:
-        raise NotImplementedError()
+    def get_processor(self, max_seq_len = 512, max_query_len = 64, **kwargs):
+        if self.how == 'words':
+            handle = PassageHandle(max_seq_len, max_query_len, **kwargs)
+            return PassageProcessor(handle)
+        else:
+            handle = DocumentSplitterHandle(max_seq_len, max_query_len, **kwargs)
+            return DocumentProcessor(handle)
 
 
 class TRECCollection(DocumentCol):
@@ -160,13 +162,6 @@ class TRECCollection(DocumentCol):
     ):
         return TRECDocumentPrepFromRetriever(self.how, plen, overlap, tlen, max_pass_per_doc)
     
-    def get_processor(self, max_seq_len = 512, max_query_len = 64, **kwargs):
-        if self.how == 'words':
-            handle = PassageHandle(max_seq_len, max_query_len, **kwargs)
-            return PassageProcessor(handle)
-        else:
-            handle = DocumentSplitterHandle(max_seq_len, max_query_len, **kwargs)
-            return DocumentProcessor(handle)
 
 class Robust04(TRECCollection):
 
@@ -283,9 +278,23 @@ class ClueWeb(TRECCollection):
         #     content = soup.html.text
         return title, content
     
+class MsMarcoDocument(DocumentCol):
+    def __init__(self, how='tokens'):
+        super().__init__('MsMarco-Doc')
+        self.how = how.lower()
+    
+    def get_prep(
+        self,
+        plen = 150, 
+        overlap = 50, 
+        tlen = 0,
+        max_pass_per_doc = 30,
+    ):
+        return MsMarcoDocumentPrep(self.how, plen, overlap, tlen, max_pass_per_doc)
+
 
 COLLECTIONS={
-    'msmarco' : MsMarco,
+    'msmarco' : MsMarcoPassage,
     'robust04' : Robust04,
     'core17' : Core17,
     'core18' : Core18,
@@ -294,4 +303,5 @@ COLLECTIONS={
     'terabyte05.751-800' : Gov2,
     'terabyte06.801-850' : Gov2,
     'cw09b' : ClueWeb,
+    'msmarco-doc': MsMarcoDocument,
 }

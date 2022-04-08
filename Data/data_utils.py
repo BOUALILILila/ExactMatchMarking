@@ -273,7 +273,7 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
                         else: 
                             title, doc = collection[doc_title]
                             doc_writer.write("\t".join((query_id, doc_title, clean_query, title,
-                                                    clean_doc, str(label), str(len_gt_query))) + "\n")
+                                                    doc, str(label), str(len_gt_query))) + "\n")
 
                     if idx % 10 == 0:
                         print(f'Wrote {idx} of {len(data)} queries')
@@ -445,6 +445,68 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
                         est_hours = (len(data) - idx) * time_passed / (max(1.0, idx) * 3600)
                         print(f'Estimated total hours to save: {est_hours}')
 
+class MsMarcoDocumentPrep(TRECDocumentPrepFromRetriever):
+    def create_kfold_cross_validation_data(self, args):
+        raise NotImplementedError
+
+    def convert_eval_dataset(
+        self,
+        args,
+    ):
+        print('Begin...')
+        if not os.path.exists(args.output_dir):
+                os.mkdir(args.output_dir)
+
+        queries = self._load_queries(path=args.queries_path)
+        run = self._load_run(path=args.run_path)
+        qrels = self._load_qrels(path=args.qrels_path)
+        data = self._merge(qrels=qrels, run=run, queries=queries)
+
+        print('Loading Collection...')
+        collection = self._load_collection(args.collection_path, args.from_raw_docs)
+
+        if self.split:
+            collection = self._split_docs(collection)
+        print('Saving Data File...')
+        self._convert_dataset(data, collection, args.set_name, args.num_eval_docs_perquery, args.output_dir)
+
+        print('Done!')
+        return self.stats    
+
+    def _laod_qrels(self, path):
+        """Loads qrels into a dict of key: query_id, value: set of relevant doc ids."""
+        qrels = collections.defaultdict(set)
+        relevance_threshold = 1
+
+        with open(path) as f:
+            for line in f:
+                qid, _, did, relevance = line.rstrip('\n').split()
+                if relevance >= relevance_threshold:
+                    qrels[qid].add(did)
+        return qrels
+
+    def _load_run(self, path):
+        """Loads run into a dict of key: query_id, value: list of candidate doc ids."""
+        # We want to preserve the order of runs so we can pair the run file with the
+        # TFRecord file.
+        run = collections.OrderedDict()
+
+        with open(path) as f:
+            for i, line in enumerate(f):
+                    query_id, _, doc_title, rank, pred, _ = line.split()
+                    if query_id not in run:
+                        run[query_id] = []
+                    run[query_id].append((doc_title, int(rank)))
+                    if i % 1000 == 0:
+                        print('Loading run {}'.format(i))
+        # Sort candidate docs by rank.
+        sorted_run = collections.OrderedDict()
+        for query_id, doc_titles_ranks in run.items():
+                sorted(doc_titles_ranks, key=lambda x: x[1])
+                doc_titles = [doc_titles for doc_titles, _ in doc_titles_ranks]
+                sorted_run[query_id] = doc_titles
+
+        return sorted_run
 
 class MsMarcoPassagePrep(TopKPrepFromRetriever):
 

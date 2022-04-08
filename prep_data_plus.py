@@ -15,6 +15,8 @@ def main():
     parser.add_argument('--output_dir', type=str, required=True)
     parser.add_argument('--queries_path', type=str, required=False,
                             help='The path to the test queries .tsv file: q_id, query')
+    parser.add_argument('--qrels_path', type=str, required=False,
+                            help='The path to the qrels file')
     parser.add_argument('--run_path', type=str, required=False,
                             help='The path to the run file .tsv file : q_id, doc_id, score, rank, judgement.')
     parser.add_argument('--collection_path', type=str, required=False,
