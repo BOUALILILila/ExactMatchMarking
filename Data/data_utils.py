@@ -473,7 +473,7 @@ class MsMarcoDocumentPrep(TRECDocumentPrepFromRetriever):
         print('Done!')
         return self.stats    
 
-    def _laod_qrels(self, path):
+    def _load_qrels(self, path):
         """Loads qrels into a dict of key: query_id, value: set of relevant doc ids."""
         qrels = collections.defaultdict(set)
         relevance_threshold = 1
@@ -507,6 +507,26 @@ class MsMarcoDocumentPrep(TRECDocumentPrepFromRetriever):
                 sorted_run[query_id] = doc_titles
 
         return sorted_run
+    
+    def _load_collection(self, path, from_raw_docs):
+        """Loads tsv collection into a dict of key: doc id, value: (title, body)."""
+        if from_raw_docs:
+            return self._load_raw_collection(path)
+        else:
+            collection = {}
+            with open(path) as f:
+                for i, line in enumerate(f):
+                        doc_id, url, doc_title, doc_body = line.rstrip('\n').split('\t')
+                        
+                        # body = strip_html_xml_tags(doc_body)
+                        # clean_body = clean_text(body)
+                        # title = strip_html_xml_tags(doc_title)
+                        # clean_title = clean_text(title)
+
+                        collection[doc_id] = (doc_title, doc_body)
+                        if i % 1000 == 0:
+                            print(f'Loading collection, doc {i}')
+            return collection
 
 class MsMarcoPassagePrep(TopKPrepFromRetriever):
 
