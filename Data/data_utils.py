@@ -1,4 +1,5 @@
 import collections
+from distutils.command.clean import clean
 import random
 import os , time
 import re, sys
@@ -34,9 +35,9 @@ def clean_text(text):
     
     #
     text = re.sub("’","'",text)
-    # clean body text: remove "-------" and "       "
-    text = re.sub(r'----*', '---', text)
-    text = re.sub(r'  *', ' ', text)
+    # # clean body text: remove "-------" and "       "
+    # text = re.sub(r'----*', '---', text)
+    # text = re.sub(r'  *', ' ', text)
     #empty characters
     text = " ".join(text.strip().split())
 
@@ -472,6 +473,62 @@ class MsMarcoDocumentPrep(TRECDocumentPrepFromRetriever):
 
         print('Done!')
         return self.stats    
+    
+
+    def _convert_dataset(
+            self,
+            data, 
+            collection, 
+            set_name, 
+            num_eval_docs, 
+            output_dir
+    ):
+        suff = 'passages' if self.split else 'doc'
+        output_path = os.path.join(output_dir, f'run_{set_name}_{suff}.tsv')
+        start_time = time.time()
+        random_title = list(collection.keys())[0]
+        
+        with open(output_path, 'w') as doc_writer:
+            for idx, query_id in enumerate(data):
+                    query, qrels, doc_titles = data[query_id]
+
+                    clean_query = clean_text(query)
+
+                    doc_titles = doc_titles[:num_eval_docs]
+
+                    # Add fake docs so we always have max_docs per query.
+                    doc_titles += max(0, num_eval_docs - len(doc_titles)) * [random_title]
+
+                    labels = [
+                        1 if doc_title in qrels else 0 
+                        for doc_title in doc_titles
+                    ]
+
+                    len_gt_query = len(qrels)
+
+                    for label, doc_title in zip(labels, doc_titles):
+                        if self.split :
+                            passages = collection[doc_title]
+                            self.stats[doc_title] = len(passages)
+                            for pos, p in passages.items():
+                                id_pass = f'{doc_title}_passage-{pos}'
+                                doc_writer.write("\t".join((query_id, id_pass, clean_query,
+                                                    p, str(label), str(len_gt_query))) + "\n")
+                        else: 
+                            title, doc = collection[doc_title]
+                            _doc = strip_html_xml_tags(doc)
+                            clean_doc = clean_text(_doc)
+                            clean_title = clean_text(title)
+                            doc_writer.write("\t".join((query_id, doc_title, clean_query, clean_title,
+                                                    clean_doc, str(label), str(len_gt_query))) + "\n")
+
+                    if idx % 10 == 0:
+                        print(f'Wrote {idx} of {len(data)} queries')
+                        time_passed = time.time() - start_time
+                        est_hours = (len(data) - idx) * time_passed / (max(1.0, idx) * 3600)
+                        print(f'Estimated total hours to save: {est_hours}')
+
+
 
     def _load_qrels(self, path):
         """Loads qrels into a dict of key: query_id, value: set of relevant doc ids."""
