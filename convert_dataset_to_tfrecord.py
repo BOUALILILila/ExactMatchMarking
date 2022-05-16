@@ -35,13 +35,14 @@ def main():
                             help="If split into overlapping chunks set this stride.")
     parser.add_argument("--set_name", default=None, type=str, required=True,
                             help="Set name.")
+    parser.add_argument('--how', type=str, default='tokens', required=False)
 
     args, other = parser.parse_known_args()
 
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
         
-    col = get_collection(args.collection, how='words')
+    col = get_collection(args.collection, how=args.how)
 
     if args.tokenizer_type.lower()=='bert':
         tokenizer = BertTokenizerFast.from_pretrained(args.tokenizer_name_path)
