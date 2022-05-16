@@ -538,7 +538,7 @@ class MsMarcoDocumentPrep(TRECDocumentPrepFromRetriever):
         with open(path) as f:
             for line in f:
                 qid, _, did, relevance = line.rstrip('\n').split()
-                if relevance >= relevance_threshold:
+                if int(relevance) >= relevance_threshold:
                     qrels[qid].add(did)
         return qrels
 
@@ -760,3 +760,4 @@ class MsMarcoPassagePrep(TopKPrepFromRetriever):
 
         print('Writer closed, DONE !')
         print(f'Writer closed with {(i+1)*2} lines.')
+
