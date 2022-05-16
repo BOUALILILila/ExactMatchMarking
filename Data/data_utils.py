@@ -218,7 +218,7 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
                 os.mkdir(args.output_dir)
 
         queries = self._load_queries(path=args.queries_path)
-        run, qrels = self._load_run(path=args.run_path)
+        run, qrels = self._load_run(path=args.run_path, format=args.run_format)
         data = self._merge(qrels=qrels, run=run, queries=queries)
 
         print('Loading Collection...')
@@ -326,7 +326,7 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
             passages = {idx:passages[idx] for idx in chosen_ids}
         return passages
 
-    def _load_run(self, path):
+    def _load_run(self, path, format="tsv"):
         """Loads run into a dict of key: query_id, value: list of candidate doc ids."""
         # We want to preserve the order of runs so we can pair the run file with the
         # TFRecord file.
@@ -335,8 +335,9 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
 
         relevance_threshold = 1
 
-        with open(path) as f:
-            for i, line in enumerate(f):
+        if format == "tsv":
+            with open(path) as f:
+                for i, line in enumerate(f):
                     query_id, doc_title, pred, rank, relevance = line.split('\t')
                     if query_id not in run:
                         run[query_id] = []
@@ -345,6 +346,17 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
                         qrels[query_id].add(doc_title)
                     if i % 1000 == 0:
                         print('Loading run {}'.format(i))
+        elif format == "trec":
+            with open(path) as f:
+                for i, line in enumerate(f):
+                    query_id, _, doc_title, rank, pred, _ = line.split()
+                    if query_id not in run:
+                        run[query_id] = []
+                    run[query_id].append((doc_title, int(rank)))
+                    if i % 1000 == 0:
+                        print('Loading run {}'.format(i))
+        else: 
+            raise ValueError(f"Run format {format} unknown")
         # Sort candidate docs by rank.
         sorted_run = collections.OrderedDict()
         for query_id, doc_titles_ranks in run.items():
@@ -364,7 +376,7 @@ class TRECDocumentPrepFromRetriever(TopKPrepFromRetriever):
 
         queries = self._load_queries(path=args.queries_path)
         print('Loading Run entries...')
-        run, qrels = self._load_run(path=args.run_path)
+        run, qrels = self._load_run(path=args.run_path, format=args.run_format)
         data = self._merge(qrels=qrels, run=run, queries=queries)
 
         print('Loading Collection...')
@@ -459,7 +471,7 @@ class MsMarcoDocumentPrep(TRECDocumentPrepFromRetriever):
                 os.mkdir(args.output_dir)
 
         queries = self._load_queries(path=args.queries_path)
-        run = self._load_run(path=args.run_path)
+        run = self._load_run(path=args.run_path, format=args.run_format)
         qrels = self._load_qrels(path=args.qrels_path)
         data = self._merge(qrels=qrels, run=run, queries=queries)
 
@@ -542,20 +554,30 @@ class MsMarcoDocumentPrep(TRECDocumentPrepFromRetriever):
                     qrels[qid].add(did)
         return qrels
 
-    def _load_run(self, path):
+    def _load_run(self, path, format="tsv"):
         """Loads run into a dict of key: query_id, value: list of candidate doc ids."""
         # We want to preserve the order of runs so we can pair the run file with the
         # TFRecord file.
         run = collections.OrderedDict()
 
-        with open(path) as f:
-            for i, line in enumerate(f):
-                    query_id, _, doc_title, rank, pred, _ = line.split()
-                    if query_id not in run:
-                        run[query_id] = []
-                    run[query_id].append((doc_title, int(rank)))
-                    if i % 1000 == 0:
-                        print('Loading run {}'.format(i))
+        if format == "tsv":
+            with open(path) as f:
+                for i, line in enumerate(f):
+                        query_id, doc_title, pred, rank, relevance = line.split("\t")
+                        if query_id not in run:
+                            run[query_id] = []
+                        run[query_id].append((doc_title, int(rank)))
+                        if i % 1000 == 0:
+                            print('Loading run {}'.format(i))
+        elif format == "trec":
+            with open(path) as f:
+                for i, line in enumerate(f):
+                        query_id, _, doc_title, rank, pred, _ = line.split()
+                        if query_id not in run:
+                            run[query_id] = []
+                        run[query_id].append((doc_title, int(rank)))
+                        if i % 1000 == 0:
+                            print('Loading run {}'.format(i))
         # Sort candidate docs by rank.
         sorted_run = collections.OrderedDict()
         for query_id, doc_titles_ranks in run.items():
@@ -581,7 +603,7 @@ class MsMarcoDocumentPrep(TRECDocumentPrepFromRetriever):
                         # clean_title = clean_text(title)
 
                         collection[doc_id] = (doc_title, doc_body)
-                        if i % 1000 == 0:
+                        if i % 1000000 == 0:
                             print(f'Loading collection, doc {i}')
             return collection
 
@@ -597,7 +619,7 @@ class MsMarcoPassagePrep(TopKPrepFromRetriever):
         qrels = self._load_qrels(args.qrels_path)
 
         queries = self._load_queries(path=args.queries_path)
-        run = self._load_run(path=args.run_path)
+        run = self._load_run(path=args.run_path, format=args.run_format)
         data = self._merge(qrels=qrels, run=run, queries=queries)
 
         print('Loading Collection...')
@@ -641,7 +663,9 @@ class MsMarcoPassagePrep(TopKPrepFromRetriever):
                     len_gt_query = len(qrels)
 
                     for label, doc_title in zip(labels, doc_titles):
-                        clean_doc = collection[doc_title]
+                        doc = collection[doc_title]
+                        _doc = strip_html_xml_tags(doc)
+                        clean_doc = clean_text(_doc)
 
                         writer.write("\t".join((query_id, doc_title, clean_query, clean_doc, str(label), str(len_gt_query))) + "\n")
 
@@ -660,26 +684,39 @@ class MsMarcoPassagePrep(TopKPrepFromRetriever):
 
         with open(path) as f:
             for i, line in enumerate(f):
-                    query_id, _, doc_id, relevance = line.rstrip().split('\t')
+                    query_id, _, doc_id, relevance = line.rstrip().split()
                     if int(relevance) >= relevance_threshold:
                         qrels[query_id].add(doc_id)
                     if i % 1000 == 0:
                         print('Loading qrels {}'.format(i))
         return qrels
 
-    def _load_run(self, path):
+    def _load_run(self, path, format="tsv"):
         """Loads run into a dict of key: query_id, value: list of candidate doc ids."""
         # We want to preserve the order of runs so we can pair the run file with the
         # TFRecord file.
         run = collections.OrderedDict()
-        with open(path) as f:
-            for i, line in enumerate(f):
-                    query_id, doc_title, rank = line.split('\t')
+        if format == "tsv":
+            with open(path) as f:
+                for i, line in enumerate(f):
+                        query_id, doc_title, rank = line.split('\t')
+                        if query_id not in run:
+                            run[query_id] = []
+                        run[query_id].append((doc_title, int(rank)))
+                        if i % 1000000 == 0:
+                            print('Loading run {}'.format(i))
+        elif format == "trec":
+            with open(path) as f:
+                for i, line in enumerate(f):
+                    query_id, _, doc_title, rank, pred, _ = line.split()
                     if query_id not in run:
                         run[query_id] = []
                     run[query_id].append((doc_title, int(rank)))
-                    if i % 1000000 == 0:
+                    if i % 1000 == 0:
                         print('Loading run {}'.format(i))
+        else: 
+            raise ValueError(f"Run format {format} unknown")
+
         # Sort candidate docs by rank.
         sorted_run = collections.OrderedDict()
         for query_id, doc_titles_ranks in run.items():
@@ -688,6 +725,26 @@ class MsMarcoPassagePrep(TopKPrepFromRetriever):
                 sorted_run[query_id] = doc_titles
 
         return sorted_run
+
+    def _load_collection(self, path, from_raw_docs):
+        """Loads tsv collection into a dict of key: doc id, value: (title, body)."""
+        if from_raw_docs:
+            return self._load_raw_collection(path)
+        else:
+            collection = {}
+            with open(path) as f:
+                for i, line in enumerate(f):
+                        pid, passage = line.rstrip('\n').split('\t')
+                        
+                        # body = strip_html_xml_tags(doc_body)
+                        # clean_body = clean_text(body)
+                        # title = strip_html_xml_tags(doc_title)
+                        # clean_title = clean_text(title)
+
+                        collection[pid] = passage
+                        if i % 1000000 == 0:
+                            print(f'Loading collection, doc {i}')
+            return collection    
 
     def convert_to_unicode(self, text):
         """Converts `text` to Unicode (if it's not already), assuming utf-8 input."""
