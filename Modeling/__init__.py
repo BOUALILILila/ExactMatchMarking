@@ -15,6 +15,7 @@ from .trainer import CustomTFTrainer
 from .reRankers import (
     TFElectraForRelevanceClassification,
     wrap_relevance_head,
+    TFBertForRelevanceClassificationWithPooling,
 )
 
 METRICS = {
