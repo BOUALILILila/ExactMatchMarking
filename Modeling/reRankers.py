@@ -73,7 +73,7 @@ def wrap_relevance_head(model):
 # New variants
 MARKER_ID=1001
 
-def get_pooler(config, add_cls: bool = False, pooling_method: str = 'avg'):
+def get_pooler(config, add_cls: int = 0, pooling_method: str = 'avg'):
     if pooling_method.lower() == 'avg':
         return AvgPooler(config, add_cls)
     elif pooling_method.lower() == 'first':
@@ -84,10 +84,11 @@ def get_pooler(config, add_cls: bool = False, pooling_method: str = 'avg'):
         raise ValueError(f"Unknown pooling method = {pooling_method}")
 
 class MarkerPooler(tf.keras.layers.Layer):
-    def __init__(self, config, add_cls: bool = False):
+    def __init__(self, config, add_cls: int = 0):
         super().__init__()
         self.add_cls = add_cls
-        n = 3 if self.add_cls else 2 
+        n = 3 if (self.add_cls == 1) else 2 
+        logger.info(f"dense n = {n}")
         self.dense = tf.keras.layers.Dense(
             config.hidden_size*n,
             kernel_initializer=get_initializer(config.initializer_range),
@@ -98,7 +99,7 @@ class MarkerPooler(tf.keras.layers.Layer):
     def call(self, sequence_output, q_mask, d_mask):
         pooled_q = self.pool(sequence_output, q_mask) # (bs, D)
         pooled_d = self.pool(sequence_output, d_mask) # (bs, D)
-        if self.add_cls:
+        if self.add_cls ==  1:
             cls_reps = sequence_output[:, 0] # (bs, D)
             pooled_output = tf.concat([cls_reps, pooled_q, pooled_d], axis=-1) # (bs, D*3)
         else:
@@ -142,7 +143,7 @@ class MaxPooler(MarkerPooler):
 class TFBertForRelevanceClassificationWithPooling(TFBertForSequenceClassification):
     def __init__(self, config, *inputs, **kwargs):
         pooling_method = kwargs.pop('pooling_method','avg')
-        add_cls = kwargs.pop('add_cls', False)
+        self.add_cls = kwargs.pop('add_cls', 0)
 
         super().__init__(config, *inputs, **kwargs)
 
@@ -153,8 +154,9 @@ class TFBertForRelevanceClassificationWithPooling(TFBertForSequenceClassificatio
             config.num_labels, kernel_initializer=get_initializer(config.initializer_range), name="classifier"
         )
 
-        self.pooler = get_pooler(config = config, add_cls=add_cls, pooling_method=pooling_method)
+        self.pooler = get_pooler(config = config, add_cls=self.add_cls, pooling_method=pooling_method)
         logger.info(f"Using Pooling method : {pooling_method}.")
+        logger.info(f"add_cls = {self.add_cls}")
     
     @property
     def dummy_inputs(self):
@@ -234,6 +236,11 @@ class TFBertForRelevanceClassificationWithPooling(TFBertForSequenceClassificatio
         d_mask = token_type_ids * markers_mask
 
         pooled_output = self.pooler(sequence_output, q_mask, d_mask)
+
+        if self.add_cls == 2:
+            cls_pooler = outputs[1]
+            pooled_output = tf.concat([cls_pooler, pooled_output], axis=-1) # (bs, D*3)
+            assert pooled_output.shape == [input_ids.shape[0], sequence_output.shape[-1]*3], f"pooled_output.shape={pooled_output}"
 
         pooled_output = self.dropout(pooled_output, training=training)
         logits = self.classifier(pooled_output)
